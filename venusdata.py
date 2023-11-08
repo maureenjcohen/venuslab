@@ -1,0 +1,98 @@
+""" """
+
+# %%
+## Import packages
+import netCDF4 as nc
+import numpy as np
+
+# %%
+## Definition of basic Venus model constants
+## Radius in km, gravitational constant in m/s2, periods in Earth days,
+## rotation rate in s-1, surface pressure in bars, molecular mass in kg/mol
+venusdict = {'radius': 6051.3, 'g': 8.87, 'rotperiod' : 243.0, 
+             'revperiod': 224.7, 'rotrate': 2.99e-07, 'psurf': 92,
+             'molmass': 0.04344,
+             'name': 'Venus'}
+## Heights in km for 50-level sims
+heights50 = [0.00, 0.03, 0.12, 0.32, 0.68, 1.23, 2.03, 3.10, 4.50, 6.23, 8.35,
+               10.8, 13.7, 17.0, 20.7, 24.6, 28.3, 31.9, 35.2, 38.4, 41.4, 44.2,
+               46.9, 49.5, 451.9, 54.1, 56.2, 58.1, 60.1, 61.9, 63.7, 65.5, 67.2,
+               68.8, 70.5, 72.2, 73.8, 75.5, 77.1, 78.7, 80.2, 81.8, 83.3, 84.8,
+               86.2, 87.8, 90.1, 92.9, 94.9, 101.]
+
+### Planet class object definition ###
+### Manages planet configuration data and simulation output data.
+
+# %%
+class Planet:
+    """ A Planet object which contains the output data for a simulation"""
+    
+    def __init__(self, planetdict):
+        """ Initiates a Planet object using the input dictionary of planet constants"""
+        self.name = planetdict['name']
+        print(f'Welcome to Venus. Your lander will melt in 57 minutes.')
+        for key, value in planetdict.items():
+            setattr(self, key, value)
+
+    def load_file(self, fn):
+        """ Loads a netCDF file using the netCDF4 package and stores in object
+            Lists dictionary key, name, dimensions, and shape
+            of each data cube and stores text in a reference list"""
+        ds = nc.Dataset(fn, 'r')
+        reflist = []
+        str1 = 'File contains:'
+        print(str1)
+        reflist.append(str1)
+        for key in ds.variables.keys():
+            if 'long_name' in ds.variables[key].ncattrs():
+                keystring = key + ': ' + ds.variables[key].long_name + ', ' + \
+                      str(ds.variables[key].dimensions) + ', ' + \
+                      str(ds.variables[key].shape)
+                print(keystring)
+                reflist.append(keystring)
+            else:
+                keystring = key + ': ' + str(ds.variables[key].dimensions) + ', ' \
+                      + str(ds.variables[key].shape)
+                print(keystring)
+                reflist.append(keystring)
+        self.data = ds
+        self.reflist = reflist
+
+    def contents(self):
+        """ Prints reference list for easy formatted oversight of file contents"""
+        print(*self.reflist, sep='\n')
+
+    def set_resolution(self):
+        """ Automatically detects file resolution and assigns aesthetically
+        pleasing coordinate arrays to object for use in labelling plots"""
+        print('Resolution is ' +  str(len(self.data.variables['lat'][:])) + ' lat, '
+              + str(len(self.data['lon'][:])) + ' lon, '
+              + str(len(self.data.variables['presnivs'][:])) + ' height')
+        self.lons = np.round(-self.data.variables['lon'][:])
+        self.lats = np.round(self.data.variables['lat'][:])
+        self.areas = self.data.variables['aire'][:]
+        self.plevs = self.data.variables['presnivs'][:]
+        if len(self.data.variables['presnivs'][:]) == 50:
+            self.heights = np.array(heights50)
+        else:
+            print('Altitude in km not available')
+
+    def calc_cp(self):
+        """ Formula LMDZ Venus uses to vary the specific heat with temperature"""
+        cp0 = 1000 # J/kg/K
+        T0 = 460 # K
+        v = 0.35 # exponent
+        cp = cp0*(self.data['temp'][:]/T0)**v
+        self.cp = cp
+
+    def calc_rho(self):
+        """ Calculate density of atmosphere using ideal gas law approximation """
+        rho = (self.data['pres'][:]*self.molmass)/(8.31451*self.data['temp'][:])
+        self.rho = rho
+
+    def setup(self):
+        self.set_resolution()
+        self.calc_cp()
+        self.calc_rho()
+
+# %%

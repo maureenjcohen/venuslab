@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
 
-
+# %%
 def zmzw(cube, meaning=True, time_slice=-1, save=False, saveformat='png',
         savename='zmzw.png'):
 
@@ -25,11 +25,11 @@ def zmzw(cube, meaning=True, time_slice=-1, save=False, saveformat='png',
     plt.title('Zonal mean zonal wind')
     plt.xlabel('Latitude [deg]')
     plt.ylabel('Pressure [mbar]')
-
+    plt.yscale('log')
     plt.xticks((0,8,16,24,32), ('90S', '45S', '0', '45N', '90N'))
-    plt.yticks((10,20,30,40,50), 
-            np.round(zmean.coord('model_level_number').points[::10]*1e-5, 0))
-    #plt.gca().invert_yaxis()
+#    plt.yticks((10,20,30,40,50), 
+#            np.round(zmean.coord('model_level_number').points[::10]*1e-5, 0))
+    plt.gca().invert_yaxis()
     plt.colorbar()
     if save==True:
         plt.savefig(savename, format=saveformat, bbox_inches='tight')
@@ -83,3 +83,39 @@ def u_series(cube, time_range=(0,-1), meaning=True, lat=16, lon=24, lev=40,
     plt.ylabel('Wind speed [m/s]')
     plt.xlabel('Time [days?]')
     plt.show()
+
+# %%
+def wind_vectors(uwind, vwind, wwind, meaning=True, time_slice=-1, n=2, 
+                 qscale=10, level=40):
+
+    u = uwind.copy()
+    v = vwind.copy()
+    w = wwind.copy()
+
+    if meaning==True:
+        u = u.collapsed('time', iris.analysis.MEAN).data
+        v = v.collapsed('time', iris.analysis.MEAN).data
+        w = w.collapsed('time', iris.analysis.MEAN).data
+    else:
+        u = u[time_slice,:,:,:].data
+        v = v[time_slice,:,:,:].data
+        w = w[time_slice,:,:,:].data
+
+    X, Y = np.meshgrid(np.arange(0,48), np.arange(0,33))
+    fig, ax = plt.subplots(figsize=(8,5))
+    wplot = ax.contourf(w[level,:,:], cmap='coolwarm', norm=TwoSlopeNorm(0))
+    cbar = plt.colorbar(wplot, orientation='vertical', fraction=0.05)
+    cbar.set_label('Vertical wind Pa/s', loc='center')
+    q1 = ax.quiver(X[::n, ::n], Y[::n, ::n], -u[level, ::n, ::n],
+                   -v[level, ::n, ::n], scale_units='xy', scale=qscale)
+    ax.quiverkey(q1, X=0.9, Y=1.05, U=qscale*2, label='%s m/s' %str(qscale*2),
+                 labelpos='E', coordinates='axes')
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+    plt.title('Winds of Venus')
+    plt.show()
+
+
+    
+
+# %%
