@@ -1,36 +1,32 @@
 # %%
-import iris
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
 
 # %%
-def zmzw(cube, meaning=True, time_slice=-1, save=False, saveformat='png',
-        savename='zmzw.png'):
+def zmzw(plobject, meaning=True, time_slice=-1, 
+         save=False, saveformat='png', savename='zmzw.png'):
 
-    """ Input: iris cube for zonal wind 
+    """ Input: numpy array for zonal wind 
         Output: plot of zonal mean zonal wind
         
         meaning (default True) calculates the time mean
         time_slice (default -1) selects time if meaning=False """
 
-    zonal = cube.copy()
+    zonal = -np.copy(plobject.data['vitu'])
     if meaning==True:
-        zonal = zonal.collapsed('time', iris.analysis.MEAN)
+        zonal = np.mean(zonal, axis=0)
     else:
         zonal = zonal[time_slice,:,:,:]
-    zmean = zonal.collapsed('longitude', iris.analysis.MEAN)
+    zmean = np.mean(zonal, axis=2) 
     
-    plt.contourf(zmean.data, cmap='RdBu_r', norm=TwoSlopeNorm(0))
+    plt.contourf(plobject.lats, plobject.heights, zmean, 
+                 cmap='RdBu', norm=TwoSlopeNorm(0))
     plt.title('Zonal mean zonal wind')
     plt.xlabel('Latitude [deg]')
-    plt.ylabel('Pressure [mbar]')
-    plt.yscale('log')
-    plt.xticks((0,8,16,24,32), ('90S', '45S', '0', '45N', '90N'))
-#    plt.yticks((10,20,30,40,50), 
-#            np.round(zmean.coord('model_level_number').points[::10]*1e-5, 0))
-    plt.gca().invert_yaxis()
-    plt.colorbar()
+    plt.ylabel('Height [km]')
+    cbar = plt.colorbar()
+    cbar.ax.set_title('m/s')
     if save==True:
         plt.savefig(savename, format=saveformat, bbox_inches='tight')
         plt.close()
@@ -38,26 +34,31 @@ def zmzw(cube, meaning=True, time_slice=-1, save=False, saveformat='png',
         plt.show()
 
 #  %%
-def zmzw_snaps(cube, time_range=(0,2), save=False, saveformat='png'):
+def zmzw_snaps(plobject, time_range=(0,2), 
+               save=False, saveformat='png'):
 
-    """ Input: iris cube for zonal wind 
+    """ Input: numpy array for zonal wind 
         Output: plot of zonal mean zonal wind
         
         meaning (default True) calculates the time mean
         time_slice (default -1) selects time if meaning=False """
 
-    zonal = cube.copy()
-    zmean = zonal.collapsed('longitude', iris.analysis.MEAN)
-    zmean = zmean.data
+    zonal = -np.copy(plobject.data['vitu'])
+    zmean = np.mean(zonal, axis=-1)
 
     for time_slice in range(time_range[0],time_range[1]):
         print(time_slice)
         savename = 'zmzw_' + str(time_slice) + '.' + saveformat
     
-        plt.contourf(zmean[time_slice,:,:], cmap='RdBu_r', norm=TwoSlopeNorm(0))
+        plt.contourf(plobject.lats, plobject.heights, zmean[time_slice,:,:], 
+                     levels=np.arange(-100, 101, 20), cmap='RdBu', 
+                     norm=TwoSlopeNorm(0))
         plt.title('Zonal mean zonal wind')
         plt.xlabel('Latitude')
-        plt.ylabel('Model level')
+        plt.ylabel('Height [km]')
+        cbar = plt.colorbar()
+        cbar.ax.set_title('m/s')
+
         if save==True:
             plt.savefig(savename, format=saveformat, bbox_inches='tight')
             plt.close()
@@ -65,57 +66,56 @@ def zmzw_snaps(cube, time_range=(0,2), save=False, saveformat='png'):
             plt.show()
 
 # %%
-def u_series(cube, time_range=(0,-1), meaning=True, lat=16, lon=24, lev=40,
+def u_series(plobject, time_range=(0,-1), meaning=True, lat=16, lon=24, lev=40,
              save=False, savename='u_series.png', saveformat='png'):
 
-    u_wind = cube.copy()
+    u_wind = -np.copy(plobject.data['vitu'])
     if meaning==True:
-        u_wind = u_wind[time_range[0]:time_range[-1],lev,lat,:].collapsed('longitude', iris.analysis.MEAN)
-        titleterm = f'Zonal mean zonal wind at level {lev}, lat {lat}'
+        u_wind = np.mean(u_wind[time_range[0]:time_range[-1],lev,lat,:], axis=-1)
+        titleterm = f'Zonal mean zonal wind at h={int(plobject.heights[lev])} km, ' \
+                    f'lat={int(plobject.lats[lat])}'
     else:
         u_wind = u_wind[time_range[0]:time_range[-1],lev,lat,lon]
-        titleterm = f'Zonal wind at level {lev}, lat {lat}, lon {lon}'
-    
-    u_data = u_wind.data
+        titleterm = f'Zonal wind at h={int(plobject.heights[lev])} km, ' \
+                    f'lat={int(plobject.lats[lat])}, ' \
+                    f'lon={int(plobject.lons[lon])}'
 
-    plt.plot(u_data)
+    plt.plot(u_wind)
     plt.title(f'{titleterm}')
     plt.ylabel('Wind speed [m/s]')
     plt.xlabel('Time [days?]')
     plt.show()
 
 # %%
-def wind_vectors(uwind, vwind, wwind, meaning=True, time_slice=-1, n=2, 
-                 qscale=10, level=40):
+def wind_vectors(plobject, meaning=True, time_slice=-1, n=2, 
+                 qscale=2, level=40):
 
-    u = uwind.copy()
-    v = vwind.copy()
-    w = wwind.copy()
+    u = -np.copy(plobject.data['vitu'])
+    v = np.copy(plobject.data['vitv'])
+    w = np.copy(plobject.data['vitw'])
 
     if meaning==True:
-        u = u.collapsed('time', iris.analysis.MEAN).data
-        v = v.collapsed('time', iris.analysis.MEAN).data
-        w = w.collapsed('time', iris.analysis.MEAN).data
+        u = np.mean(u, axis=0)
+        v = np.mean(v, axis=0)
+        w = np.mean(w, axis=0)
     else:
-        u = u[time_slice,:,:,:].data
-        v = v[time_slice,:,:,:].data
-        w = w[time_slice,:,:,:].data
+        u = u[time_slice,:,:,:]
+        v = v[time_slice,:,:,:]
+        w = w[time_slice,:,:,:]
 
-    X, Y = np.meshgrid(np.arange(0,48), np.arange(0,33))
+ #   X, Y = np.meshgrid(np.arange(0,len(plobject.lons)), np.arange(0,len(plobject.lats)))
+    X, Y = np.meshgrid(plobject.lons, plobject.lats)
     fig, ax = plt.subplots(figsize=(8,5))
-    wplot = ax.contourf(w[level,:,:], cmap='coolwarm', norm=TwoSlopeNorm(0))
+    wplot = ax.contourf(plobject.lons, plobject.lats, w[level,:,:], 
+                        cmap='coolwarm', norm=TwoSlopeNorm(0))
     cbar = plt.colorbar(wplot, orientation='vertical', fraction=0.05)
-    cbar.set_label('Vertical wind Pa/s', loc='center')
-    q1 = ax.quiver(X[::n, ::n], Y[::n, ::n], -u[level, ::n, ::n],
-                   -v[level, ::n, ::n], scale_units='xy', scale=qscale)
-    ax.quiverkey(q1, X=0.9, Y=1.05, U=qscale*2, label='%s m/s' %str(qscale*2),
+    cbar.set_label('Vertical wind, Pa/s', loc='center')
+    q1 = ax.quiver(X[::n, ::n], Y[::n, ::n], u[level, ::n, ::n],
+                   -v[level, ::n, ::n], angles='xy', scale_units='xy', scale=qscale)
+    ax.quiverkey(q1, X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
                  labelpos='E', coordinates='axes')
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
-    plt.title('Winds of Venus')
+    plt.title(f'Winds of Venus, h={int(plobject.heights[level])} km')
     plt.show()
 
-
-    
-
-# %%
