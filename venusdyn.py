@@ -33,6 +33,36 @@ def zmzw(plobject, meaning=True, time_slice=-1,
     else:
         plt.show()
 
+# %%
+def zmmw(plobject, meaning=True, time_slice=-1, 
+         save=False, saveformat='png', savename='zmzw.png'):
+
+    """ Input: numpy array for meridional wind 
+        Output: plot of zonal mean meridional wind
+        
+        meaning (default True) calculates the time mean
+        time_slice (default -1) selects time if meaning=False """
+
+    zonal = np.copy(plobject.data['vitv'])
+    if meaning==True:
+        zonal = np.mean(zonal, axis=0)
+    else:
+        zonal = zonal[time_slice,:,:,:]
+    zmean = np.mean(zonal, axis=-1) 
+    
+    plt.contourf(plobject.lats, plobject.heights[:-5], zmean[:-5,:], 
+                 cmap='RdBu_r', levels=np.arange(-10,10,1), norm=TwoSlopeNorm(0))
+    plt.title('Zonal mean meridional wind')
+    plt.xlabel('Latitude [deg]')
+    plt.ylabel('Height [km]')
+    cbar = plt.colorbar()
+    cbar.ax.set_title('m/s')
+    if save==True:
+        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
+
 #  %%
 def zmzw_snaps(plobject, time_range=(0,2), 
                save=False, saveformat='png'):
@@ -89,6 +119,8 @@ def u_series(plobject, time_range=(0,-1), meaning=True, lat=16, lon=24, lev=40,
 # %%
 def wind_vectors(plobject, meaning=True, time_slice=-1, n=2, 
                  qscale=2, level=40):
+    
+    """ Plot the horizontal and vertical wind on a model level in one figure."""
 
     u = -np.copy(plobject.data['vitu'])
     v = np.copy(plobject.data['vitv'])
@@ -119,3 +151,41 @@ def wind_vectors(plobject, meaning=True, time_slice=-1, n=2,
     plt.title(f'Winds of Venus, h={int(plobject.heights[level])} km')
     plt.show()
 
+# %%
+def psi_m(plobject, meaning=True, time_slice=-1):
+
+    """ Plot the mean meridional mass streamfunction. """
+
+    v = np.copy(plobject.data['vitv'])
+    if meaning==True:
+        v = np.mean(v, axis=0)
+    else:
+        v = v[time_slice,:,:,:]
+    zm_v = np.mean(v, axis=-1)
+    # That's the zonal mean of the northward wind calculated
+
+    pres = np.copy(plobject.data['pres'])
+    mean_pres = np.mean(pres, axis=0)
+    zm_pres = np.mean(mean_pres, axis=-1)
+    # Time and zonal mean of pressure
+
+ #   mean_rho = np.mean(plobject.rho, axis=0)
+ #   zm_rho = np.mean(mean_rho, axis=-1)
+
+    dp = np.array(np.gradient(zm_pres, axis=0))
+    integrand = zm_v[::-1]*dp[::-1] # dp x v multiplied from top to bottom
+    stf = -np.cumsum(integrand, axis=0) # cumulative sum from top to bottom
+    stf_constant = (2*np.pi*plobject.radius*1e3)*(np.cos(plobject.lats*(np.pi/180)))/(plobject.g)
+    stf = stf_constant*stf[::-1]*1e-9
+
+    fig, ax = plt.subplots(figsize=(8,6))
+    cs = plt.contourf(plobject.lats, plobject.heights, stf, cmap='coolwarm',
+                      levels=np.arange(-200, 200, 20), norm=TwoSlopeNorm(0))
+    plt.title('Mean meridional mass streamfunction')
+    plt.xlabel('Latitude [deg]')
+    plt.ylabel('Height [km]')
+    cbar = plt.colorbar()
+    cbar.set_label('$10^9$ kg/s', loc='center')
+    plt.show()
+
+# %%
