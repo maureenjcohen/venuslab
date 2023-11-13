@@ -2,6 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
+from scipy.integrate import cumtrapz
 
 # %%
 def zmzw(plobject, meaning=True, time_slice=-1, 
@@ -169,23 +170,22 @@ def psi_m(plobject, meaning=True, time_slice=-1):
     zm_pres = np.mean(mean_pres, axis=-1)
     # Time and zonal mean of pressure
 
- #   mean_rho = np.mean(plobject.rho, axis=0)
- #   zm_rho = np.mean(mean_rho, axis=-1)
-
-    dp = np.array(np.gradient(zm_pres, axis=0))
-    integrand = zm_v[::-1]*dp[::-1] # dp x v multiplied from top to bottom
-    stf = -np.cumsum(integrand, axis=0) # cumulative sum from top to bottom
+    dp = np.gradient(zm_pres, axis=0)
+    integrand = np.flip(zm_v, axis=0)*np.flip(dp, axis=0) # dp x v multiplied from top to bottom
+#    stf = -np.cumsum(integrand, axis=0) # cumulative sum from top to bottom
+    stf = -cumtrapz(integrand, axis=0)
+    print(stf.shape)
     stf_constant = (2*np.pi*plobject.radius*1e3)*(np.cos(plobject.lats*(np.pi/180)))/(plobject.g)
-    stf = stf_constant*stf[::-1]*1e-9
+    stf = stf_constant*np.flip(stf, axis=0)*1e-10
 
-    fig, ax = plt.subplots(figsize=(8,6))
-    cs = plt.contourf(plobject.lats, plobject.heights, stf, cmap='coolwarm',
-                      levels=np.arange(-200, 200, 20), norm=TwoSlopeNorm(0))
+    fig, ax = plt.subplots(figsize=(6,4))
+    cs = plt.contourf(plobject.lats, plobject.heights[:-1], stf, cmap='coolwarm',
+                      levels=np.arange(-15, 15, 1), norm=TwoSlopeNorm(0))
     plt.title('Mean meridional mass streamfunction')
     plt.xlabel('Latitude [deg]')
     plt.ylabel('Height [km]')
     cbar = plt.colorbar()
-    cbar.set_label('$10^9$ kg/s', loc='center')
+    cbar.set_label('$10^{10}$ kg/s', loc='center')
     plt.show()
 
 # %%
