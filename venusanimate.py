@@ -53,7 +53,7 @@ def sphere(inputarray, lons, lats, i, j, inputcols, ptitle, cunit):
     return img
 
 # %%
-def animate_sphere(inputarray, lons, lats, irange=(0, 360, 30), j, inputcols='hot', 
+def animate_sphere(inputarray, lons, lats, j, irange=(0, 360, 30), inputcols='hot', 
                    ptitle='Surface radiation', cunit='W/m2',
                    savename='test.gif'):
     
