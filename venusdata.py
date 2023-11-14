@@ -90,9 +90,15 @@ class Planet:
         rho = (self.data['pres'][:]*self.molmass)/(8.31451*self.data['temp'][:])
         self.rho = rho
 
+    def calc_w(self):
+        """ Calculate vertical velocity in m/s from Pa/s. """
+        w_wind = -(self.data['vitw'][:]/(self.rho*self.g))
+        self.w_wind = w_wind
+
     def setup(self):
         self.set_resolution()
         self.calc_cp()
         self.calc_rho()
+        self.calc_w()
 
 # %%
