@@ -11,7 +11,7 @@ import numpy as np
 ## rotation rate in s-1, surface pressure in bars, molecular mass in kg/mol
 venusdict = {'radius': 6051.3, 'g': 8.87, 'rotperiod' : 243.0, 
              'revperiod': 224.7, 'rotrate': 2.99e-07, 'psurf': 92,
-             'molmass': 0.04344,
+             'molmass': 0.04344, 'RCO2' : 287.05,
              'name': 'Venus'}
 ## Heights in km for 50-level sims
 heights50 = [0.00, 0.03, 0.12, 0.32, 0.68, 1.23, 2.03, 3.10, 4.50, 6.23, 8.35,
@@ -81,9 +81,24 @@ class Planet:
         """ Formula LMDZ Venus uses to vary the specific heat with temperature"""
         cp0 = 1000 # J/kg/K
         T0 = 460 # K
-        v = 0.35 # exponent
-        cp = cp0*(self.data['temp'][:]/T0)**v
+        v0 = 0.35 # exponent
+        cp = cp0*(self.data['temp'][:]/T0)**v0
         self.cp = cp
+        self.cp0 = cp0
+        self.T0 = T0
+        self.v0 = v0
+
+    def calc_theta(self):
+        """ Formula LMDZ Venus uses for potential temperature to account for
+        specific heat capacity varying with height.
+        See Lebonnois et al 2010.   """
+        if not hasattr(self, 'cp'):
+            self.calc_cp()
+        p0 = np.max(self.data['psol'][:])
+        theta_v = (self.data['temp'][:]**self.v0 +
+                   self.v0*(self.T0**self.v0)*(np.log((p0/self.data['pres'][:])**(self.RCO2/self.cp0))))
+        theta = theta_v**(1/self.v0)
+        self.theta = theta
 
     def calc_rho(self):
         """ Calculate density of atmosphere using ideal gas law approximation """
@@ -95,10 +110,12 @@ class Planet:
         w_wind = -(self.data['vitw'][:]/(self.rho*self.g))
         self.w_wind = w_wind
 
+    def total_area(self):
+        """ Calculate total surface area in m2"""
+        self.area = np.sum(self.data['aire'][:])
+
     def setup(self):
         self.set_resolution()
-        self.calc_cp()
-        self.calc_rho()
-        self.calc_w()
+        self.total_area()
 
 # %%
