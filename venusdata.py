@@ -119,3 +119,27 @@ class Planet:
         self.total_area()
 
 # %%
+def local_time(plobject, time_slice=-1):
+    
+    """ A function that calculates the local time for a
+    snapshot from a given timestep."""
+    equator = np.argmin(np.abs(plobject.lats))
+    # Find row number of latitude closest to 0,
+    # aka the equator
+    rad_toa = plobject.data['tops']
+    # Solar radiation at top of atmosphere
+    subsol = np.argmax(rad_toa[time_slice,equator,:])
+    # Find column number of longitude where solar
+    # radiation is currently at a maximum
+    print('Local noon is at col ' + str(subsol))
+    print('Local noon is at lon ' + str(plobject.lons[subsol]))
+    dt = 24/len(plobject.lons)
+    hours = np.arange(0,24,dt)
+    # Array of hour coordinates with same
+    # dimension as longitude coordinates
+    roll_step = int(subsol - (len(plobject.lons)/2))
+    new_hours = list(np.roll(hours, roll_step))
+
+    return new_hours
+
+# %%
