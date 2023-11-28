@@ -44,6 +44,7 @@ def surface_temp(plobject, meaning=True, time_slice=-1):
     cbar = plt.colorbar()
     cbar.set_label('K', loc='center')
     plt.show()
+    
 # %%
 def heating_rates(plobject, tmean=True, time_slice=-1,
                   select='all', smean=True, coord=(0,0)):
@@ -54,8 +55,6 @@ def heating_rates(plobject, tmean=True, time_slice=-1,
         pbl_dt = np.mean(plobject.data['dtvdf'][:], axis=0)
         dry_dt = np.mean(plobject.data['dtajs'][:], axis=0)
         sw_dt = np.mean(plobject.data['dtswr'][:], axis=0)
-#        nlte_dt = np.mean(plobject.data['dtswrNLTE'][:], axis=0)
- #       dcrisp_dt = np.mean(plobject.data['dtswrDCrisp'][:], axis=0)
         lw_dt = np.mean(plobject.data['dtlwr'][:], axis=0)
         total = dyn_dt + pbl_dt + dry_dt + sw_dt + \
             lw_dt
@@ -64,8 +63,6 @@ def heating_rates(plobject, tmean=True, time_slice=-1,
         pbl_dt = plobject.data['dtvdf'][:][time_slice,:,:,:]
         dry_dt = plobject.data['dtajs'][:][time_slice,:,:,:]
         sw_dt = plobject.data['dtswr'][:][time_slice,:,:,:]
-#        nlte_dt = plobject.data['dtswrNLTE'][:][time_slice,:,:,:]
-#        dcrisp_dt = plobject.data['dtswrDCrisp'][:][time_slice,:,:,:]
         lw_dt = plobject.data['dtlwr'][:][time_slice,:,:,:]
         total = dyn_dt + pbl_dt + dry_dt + sw_dt + \
             lw_dt

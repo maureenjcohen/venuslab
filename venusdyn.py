@@ -19,7 +19,7 @@ def zmzw(plobject, meaning=True, time_slice=-1,
         zonal = np.mean(zonal, axis=0)
     else:
         zonal = zonal[time_slice,:,:,:]
-    zmean = np.mean(zonal, axis=2) 
+    zmean = np.mean(zonal, axis=-1) 
     
     plt.contourf(plobject.lats, plobject.heights, zmean, 
                  cmap='RdBu', norm=TwoSlopeNorm(0))
@@ -178,9 +178,9 @@ def psi_m(plobject, meaning=True, time_slice=-1):
     stf_constant = (2*np.pi*plobject.radius*1e3)*(np.cos(plobject.lats*(np.pi/180)))/(plobject.g)
     stf = stf_constant*np.flip(stf, axis=0)*1e-10
 
-    fig, ax = plt.subplots(figsize=(6,4))
+    fig, ax = plt.subplots(figsize=(6,6))
     cs = plt.contourf(plobject.lats, plobject.heights[:-1], stf, cmap='coolwarm',
-                      levels=np.arange(-15, 15, 1), norm=TwoSlopeNorm(0))
+                      levels=np.arange(-50, 50, 5), norm=TwoSlopeNorm(0))
     plt.title('Mean meridional mass streamfunction')
     plt.xlabel('Latitude [deg]')
     plt.ylabel('Height [km]')
