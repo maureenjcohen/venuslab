@@ -174,18 +174,57 @@ def psi_m(plobject, meaning=True, time_slice=-1):
     integrand = np.flip(zm_v, axis=0)*np.flip(dp, axis=0) # dp x v multiplied from top to bottom
 #    stf = -np.cumsum(integrand, axis=0) # cumulative sum from top to bottom
     stf = -cumtrapz(integrand, axis=0)
-    print(stf.shape)
     stf_constant = (2*np.pi*plobject.radius*1e3)*(np.cos(plobject.lats*(np.pi/180)))/(plobject.g)
     stf = stf_constant*np.flip(stf, axis=0)*1e-10
 
     fig, ax = plt.subplots(figsize=(6,6))
-    cs = plt.contourf(plobject.lats, plobject.heights[:-1], stf, cmap='coolwarm',
-                      levels=np.arange(-50, 50, 5), norm=TwoSlopeNorm(0))
-    plt.title('Mean meridional mass streamfunction')
+    cs = plt.contour(plobject.lats, plobject.heights[:-1], stf, colors='black',
+                     levels=40)
+    ax.clabel(cs, cs.levels, inline=True)
+    plt.title('Mean meridional mass streamfunction, $10^{10}$ kg/s')
     plt.xlabel('Latitude [deg]')
     plt.ylabel('Height [km]')
-    cbar = plt.colorbar()
-    cbar.set_label('$10^{10}$ kg/s', loc='center')
     plt.show()
+
+# %%
+def wmap(plobject, meaning=True, lev=30, time_slice=-1, wtype='Vertical'):
+    """ Plot lon-lat map of vertical or pressure velocity
+    
+    if wtype Pressure, plot pressure velocity in Pa/s (default)
+    if wtype Vertical, plot vertical velocity in m/s"""
+
+    if wtype=='Pressure':
+        w = np.copy(plobject.data['vitw'][:,lev,:,:])
+        unit = 'Pa/s'
+    elif wtype=='Vertical':
+        omega = np.copy(plobject.data['vitw'][:,lev,:,:])
+        temp = np.copy(plobject.data['temp'][:,lev,:,:])
+        pres = np.copy(plobject.data['pres'][:,lev,:,:])
+        w = -(omega*temp*plobject.RCO2)/(pres*plobject.g)
+        unit = 'm/s'
+    else:
+        print('Arg wtype must be either Pressure or Vertical')
+
+    if meaning==True:
+        w = np.mean(w, axis=0)
+        titleterm = 'long-term mean'
+    else:
+        w = w[time_slice,:,:]
+        titleterm = f't={time_slice}'
+
+    fig, ax = plt.subplots(figsize=(8,6))
+    wm = plt.contourf(plobject.lons, plobject.lats, w,
+                      levels=np.arange(-0.04,0.041,0.005), 
+                      cmap='coolwarm', norm=TwoSlopeNorm(0))
+    plt.title(f'{wtype} velocity, h={plobject.heights[lev]} km, {titleterm}')
+    plt.xlabel('Longitude [deg]')
+    plt.ylabel('Latitude [deg]')
+    cbar = plt.colorbar()
+    cbar.set_label(f'{unit}')
+    plt.show()
+
+
+
+
 
 # %%
