@@ -223,8 +223,63 @@ def wmap(plobject, meaning=True, lev=30, time_slice=-1, wtype='Vertical'):
     cbar.set_label(f'{unit}')
     plt.show()
 
+# %%
+def zmage(plobject, meaning=False, time_slice=-1, 
+         save=False, saveformat='png', savename='zmage.png'):
 
+    """ Input: numpy array for age of air 
+        Output: plot of zonal mean age of air
+        
+        meaning (default True) calculates the time mean
+        time_slice (default -1) selects time if meaning=False """
 
+    ageo = np.copy(plobject.data['age'])
+    if meaning==True:
+        ageo = np.mean(ageo, axis=0)
+    else:
+        ageo = ageo[time_slice,:,:,:]
+    zmageo = np.mean(ageo, axis=-1) 
+    
+    plt.contourf(plobject.lats, plobject.heights[0:10], zmageo[0:10,:], 
+                 cmap='cividis')
+    plt.title('Age of air (zonal mean)')
+    plt.xlabel('Latitude [deg]')
+    plt.ylabel('Height [km]')
+    cbar = plt.colorbar()
+    cbar.set_label('seconds')
+    if save==True:
+        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
 
+# %%
+def age_map(plobject, lev=5, meaning=False, time_slice=-1,
+            save=False, saveformat='png', savename='age_map.png'):
+        
+    """ Input: numpy array for age of air 
+        Output: plot of zonal mean age of air
+        
+        meaning (default True) calculates the time mean
+        time_slice (default -1) selects time if meaning=False """
+
+    ageo = np.copy(plobject.data['age'])
+    if meaning==True:
+        ageo = np.mean(ageo[:,lev,:,:], axis=0)
+    else:
+        ageo = ageo[time_slice,lev,:,:]
+
+    plt.contourf(plobject.lons, plobject.lats, 
+                 ageo, cmap='cividis')
+    plt.title(f'Age of air, h={plobject.heights[lev]} km')
+    plt.xlabel('Longitude [deg]')
+    plt.ylabel('Latitude [deg]')
+    cbar = plt.colorbar()
+    cbar.set_label('seconds')
+    if save==True:
+        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
 
 # %%
