@@ -14,7 +14,7 @@ def zmzw(plobject, meaning=True, time_slice=-1,
         meaning (default True) calculates the time mean
         time_slice (default -1) selects time if meaning=False """
 
-    zonal = -np.copy(plobject.data['vitu'])
+    zonal = -plobject.data['vitu']
     if meaning==True:
         zonal = np.mean(zonal, axis=0)
     else:
@@ -44,7 +44,7 @@ def zmmw(plobject, meaning=True, time_slice=-1,
         meaning (default True) calculates the time mean
         time_slice (default -1) selects time if meaning=False """
 
-    zonal = np.copy(plobject.data['vitv'])
+    zonal = plobject.data['vitv']
     if meaning==True:
         zonal = np.mean(zonal, axis=0)
     else:
@@ -74,7 +74,7 @@ def zmzw_snaps(plobject, time_range=(0,2),
         meaning (default True) calculates the time mean
         time_slice (default -1) selects time if meaning=False """
 
-    zonal = -np.copy(plobject.data['vitu'])
+    zonal = -plobject.data['vitu']
     zmean = np.mean(zonal, axis=-1)
 
     for time_slice in range(time_range[0],time_range[1]):
@@ -100,7 +100,7 @@ def zmzw_snaps(plobject, time_range=(0,2),
 def u_series(plobject, time_range=(0,-1), meaning=True, lat=16, lon=24, lev=40,
              save=False, savename='u_series.png', saveformat='png'):
 
-    u_wind = -np.copy(plobject.data['vitu'])
+    u_wind = -plobject.data['vitu']
     if meaning==True:
         u_wind = np.mean(u_wind[time_range[0]:time_range[-1],lev,lat,:], axis=-1)
         titleterm = f'Zonal mean zonal wind at h={int(plobject.heights[lev])} km, ' \
@@ -123,9 +123,9 @@ def wind_vectors(plobject, meaning=True, time_slice=-1, n=2,
     
     """ Plot the horizontal and vertical wind on a model level in one figure."""
 
-    u = -np.copy(plobject.data['vitu'])
-    v = np.copy(plobject.data['vitv'])
-    w = np.copy(plobject.data['vitw'])
+    u = -plobject.data['vitu']
+    v = plobject.data['vitv']
+    w = plobject.data['vitw']
 
     if meaning==True:
         u = np.mean(u, axis=0)
@@ -153,22 +153,22 @@ def wind_vectors(plobject, meaning=True, time_slice=-1, n=2,
     plt.show()
 
 # %%
-def psi_m(plobject, meaning=True, time_slice=-1):
+def psi_m(plobject, meaning=True, trange=(-230,-1), time_slice=-1):
 
     """ Plot the mean meridional mass streamfunction. """
 
-    v = np.copy(plobject.data['vitv'])
+    v = plobject.data['vitv']
+    pres = plobject.data['pres']
     if meaning==True:
-        v = np.mean(v, axis=0)
+        v = np.mean(v[trange[0]:trange[1],:,:,:], axis=0)
+        pres = np.mean(pres[trange[0]:trange[1],:,:,:], axis=0)
     else:
         v = v[time_slice,:,:,:]
+        pres = pres[time_slice,:,:,:]
     zm_v = np.mean(v, axis=-1)
     # That's the zonal mean of the northward wind calculated
-
-    pres = np.copy(plobject.data['pres'])
-    mean_pres = np.mean(pres, axis=0)
-    zm_pres = np.mean(mean_pres, axis=-1)
-    # Time and zonal mean of pressure
+    zm_pres = np.mean(pres, axis=-1)
+    # Zonal mean of pressure
 
     dp = np.gradient(zm_pres, axis=0)
     integrand = np.flip(zm_v, axis=0)*np.flip(dp, axis=0) # dp x v multiplied from top to bottom
@@ -194,12 +194,12 @@ def wmap(plobject, meaning=True, lev=30, time_slice=-1, wtype='Vertical'):
     if wtype Vertical, plot vertical velocity in m/s"""
 
     if wtype=='Pressure':
-        w = np.copy(plobject.data['vitw'][:,lev,:,:])
+        w = plobject.data['vitw'][:,lev,:,:]
         unit = 'Pa/s'
     elif wtype=='Vertical':
-        omega = np.copy(plobject.data['vitw'][:,lev,:,:])
-        temp = np.copy(plobject.data['temp'][:,lev,:,:])
-        pres = np.copy(plobject.data['pres'][:,lev,:,:])
+        omega = plobject.data['vitw'][:,lev,:,:]
+        temp = plobject.data['temp'][:,lev,:,:]
+        pres = plobject.data['pres'][:,lev,:,:]
         w = -(omega*temp*plobject.RCO2)/(pres*plobject.g)
         unit = 'm/s'
     else:
@@ -224,7 +224,7 @@ def wmap(plobject, meaning=True, lev=30, time_slice=-1, wtype='Vertical'):
     plt.show()
 
 # %%
-def zmage(plobject, meaning=False, time_slice=-1, 
+def zmage(plobject, hmax=20, meaning=False, time_slice=-1, 
          save=False, saveformat='png', savename='zmage.png'):
 
     """ Input: numpy array for age of air 
@@ -233,14 +233,15 @@ def zmage(plobject, meaning=False, time_slice=-1,
         meaning (default True) calculates the time mean
         time_slice (default -1) selects time if meaning=False """
 
-    ageo = np.copy(plobject.data['age'])
+    ageo = plobject.data['age']
     if meaning==True:
         ageo = np.mean(ageo, axis=0)
     else:
         ageo = ageo[time_slice,:,:,:]
     zmageo = np.mean(ageo, axis=-1) 
     
-    plt.contourf(plobject.lats, plobject.heights[0:10], zmageo[0:10,:], 
+    plt.contourf(plobject.lats, plobject.heights[0:hmax], 
+                 zmageo[0:hmax,:], 
                  cmap='cividis')
     plt.title('Age of air (zonal mean)')
     plt.xlabel('Latitude [deg]')
@@ -263,7 +264,7 @@ def age_map(plobject, lev=5, meaning=False, time_slice=-1,
         meaning (default True) calculates the time mean
         time_slice (default -1) selects time if meaning=False """
 
-    ageo = np.copy(plobject.data['age'])
+    ageo = plobject.data['age']
     if meaning==True:
         ageo = np.mean(ageo[:,lev,:,:], axis=0)
     else:
