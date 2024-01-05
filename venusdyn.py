@@ -224,30 +224,35 @@ def wmap(plobject, meaning=True, lev=30, time_slice=-1, wtype='Vertical'):
     plt.show()
 
 # %%
-def zmage(plobject, hmax=20, meaning=False, time_slice=-1, 
+def zmage(plobject, hmin=0, hmax=20, time_slice=-1, convert2yr=True,
          save=False, saveformat='png', savename='zmage.png'):
 
     """ Input: numpy array for age of air 
         Output: plot of zonal mean age of air
         
-        meaning (default True) calculates the time mean
-        time_slice (default -1) selects time if meaning=False """
+        time_slice (default -1) selects time """
 
     ageo = plobject.data['age']
-    if meaning==True:
-        ageo = np.mean(ageo, axis=0)
+    ageo = ageo[time_slice,:,:,:]
+    zmageo = np.mean(ageo, axis=-1)
+
+    if convert2yr==True:
+        zmageo = zmageo/(60*60*24*360)
+        cunit = 'years'
     else:
-        ageo = ageo[time_slice,:,:,:]
-    zmageo = np.mean(ageo, axis=-1) 
+        cunit = 'seconds' 
+
+    zmslice = zmageo[hmin:hmax,:]
+   # levels = np.linspace(np.min(zmslice),np.max(zmslice),40)
     
-    plt.contourf(plobject.lats, plobject.heights[0:hmax], 
-                 zmageo[0:hmax,:], 
+    plt.contourf(plobject.lats, plobject.heights[hmin:hmax], 
+                 zmslice,
                  cmap='cividis')
     plt.title('Age of air (zonal mean)')
     plt.xlabel('Latitude [deg]')
     plt.ylabel('Height [km]')
     cbar = plt.colorbar()
-    cbar.set_label('seconds')
+    cbar.set_label(f'{cunit}')
     if save==True:
         plt.savefig(savename, format=saveformat, bbox_inches='tight')
         plt.close()
@@ -255,28 +260,32 @@ def zmage(plobject, hmax=20, meaning=False, time_slice=-1,
         plt.show()
 
 # %%
-def age_map(plobject, lev=5, meaning=False, time_slice=-1,
+def age_map(plobject, lev=16, time_slice=-1, convert2yr=True,
             save=False, saveformat='png', savename='age_map.png'):
         
     """ Input: numpy array for age of air 
-        Output: plot of zonal mean age of air
+        Output: lon-lat plot of age of air at given model level
         
-        meaning (default True) calculates the time mean
-        time_slice (default -1) selects time if meaning=False """
+        time_slice (default -1) selects time """
 
     ageo = plobject.data['age']
-    if meaning==True:
-        ageo = np.mean(ageo[:,lev,:,:], axis=0)
+    ageo = ageo[time_slice,lev,:,:]
+
+    if convert2yr==True:
+        ageo = ageo/(60*60*24*360)
+        cunit = 'years'
     else:
-        ageo = ageo[time_slice,lev,:,:]
+        cunit = 'seconds' 
+
+    levels = np.linspace(np.min(ageo),np.max(ageo),40)
 
     plt.contourf(plobject.lons, plobject.lats, 
-                 ageo, cmap='cividis')
+                 ageo, levels=levels, cmap='cividis')
     plt.title(f'Age of air, h={plobject.heights[lev]} km')
     plt.xlabel('Longitude [deg]')
     plt.ylabel('Latitude [deg]')
     cbar = plt.colorbar()
-    cbar.set_label('seconds')
+    cbar.set_label(f'{cunit}')
     if save==True:
         plt.savefig(savename, format=saveformat, bbox_inches='tight')
         plt.close()

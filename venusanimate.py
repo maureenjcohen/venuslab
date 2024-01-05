@@ -74,3 +74,87 @@ def animate_sphere(inputarray, lons, lats, j, irange=(0, 360, 30), inputcols='ho
     # Save our list of frames as a gif
 
 # %%
+def lonlat_frame(inputarray, lons, lats, heights, lev, time_slice, 
+                 inputcols, ptitle, cunit, cmax):
+
+    levels = np.linspace(0.0, cmax, 20)
+    fig = plt.figure(figsize=(8, 6))
+    plt.contourf(lons, lats, inputarray[time_slice,lev,:,:], levels=levels,
+                 cmap=inputcols, extend='max')
+    plt.title(f'{ptitle}, h={heights[lev]} km')
+    plt.xlabel('Longitude [deg]')
+    plt.ylabel('Latitude [deg]')
+    cbar = plt.colorbar()
+    cbar.set_label(f'{cunit}')
+
+    # The code block below creates a buffer and saves the plot to it.
+    # This avoids having to actually save the plot to the hard drive.
+    # We then reopen the 'saved' figure as a PIL Image object and output it.
+    buf = io.BytesIO()
+    fig.savefig(buf, bbox_inches='tight')
+    buf.seek(0)
+    img = Image.open(buf)
+    img.show()
+    buf.close()
+
+    return img
+
+# %%
+def animate_lonlat(inputarray, lons, lats, heights, lev, cmax, trange=(0,4499,50), 
+                   inputcols='cividis',
+                   ptitle='Age of air', cunit='seconds',
+                   savename='lonlat.gif'):
+
+    im = []
+    for t in range(trange[0], trange[1], trange[2]):
+        frame_shot = lonlat_frame(inputarray, lons, lats, heights, lev, 
+                                  t, inputcols, ptitle, cunit, cmax)
+        im.append(frame_shot)
+
+    im[0].save(savename, save_all=True, append_images=im[1:], optimize=False,
+            duration=1, loop=1)
+
+# %%
+def zm_frame(inputarray, lats, hmin, hmax, heights, time_slice, 
+                 inputcols, ptitle, cunit, cmin, cmax):
+    
+    zm = np.mean(inputarray[time_slice,:,:,:], axis=-1) 
+    levels = np.linspace(cmin, cmax, 30)
+
+    fig = plt.figure(figsize=(6, 6))
+    plt.contourf(lats, heights[hmin:hmax], zm[hmin:hmax,:], levels=levels, 
+                 cmap=inputcols, extend='max')
+    plt.title(f'{ptitle}, zonal mean')
+    plt.xlabel('Latitude [deg]')
+    plt.ylabel('Height [km]')
+    cbar = plt.colorbar()
+    cbar.set_label(f'{cunit}')
+
+    # The code block below creates a buffer and saves the plot to it.
+    # This avoids having to actually save the plot to the hard drive.
+    # We then reopen the 'saved' figure as a PIL Image object and output it.
+    buf = io.BytesIO()
+    fig.savefig(buf, bbox_inches='tight')
+    buf.seek(0)
+    img = Image.open(buf)
+    img.show()
+    buf.close()
+
+    return img
+
+# %%
+def animate_zm(inputarray, lats, hmin, hmax, heights, cmin, cmax, trange=(0,4499,50), 
+                   inputcols='cividis',
+                   ptitle='Age of air', cunit='seconds',
+                   savename='zm.gif'):
+
+    im = []
+    for t in range(trange[0], trange[1], trange[2]):
+        frame_shot = zm_frame(inputarray, lats, hmin, hmax, heights, 
+                             t, inputcols, ptitle, cunit, cmin, cmax)
+        im.append(frame_shot)
+
+    im[0].save(savename, save_all=True, append_images=im[1:], optimize=False,
+            duration=500, loop=1)
+
+# %%
