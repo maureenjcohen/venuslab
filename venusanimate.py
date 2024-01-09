@@ -75,9 +75,9 @@ def animate_sphere(inputarray, lons, lats, j, irange=(0, 360, 30), inputcols='ho
 
 # %%
 def lonlat_frame(inputarray, lons, lats, heights, lev, time_slice, 
-                 inputcols, ptitle, cunit, cmax):
+                 inputcols, ptitle, cunit, cmin, cmax):
 
-    levels = np.linspace(0.0, cmax, 20)
+    levels = np.linspace(cmin, cmax, 100)
     fig = plt.figure(figsize=(8, 6))
     plt.contourf(lons, lats, inputarray[time_slice,lev,:,:], levels=levels,
                  cmap=inputcols, extend='max')
@@ -100,15 +100,16 @@ def lonlat_frame(inputarray, lons, lats, heights, lev, time_slice,
     return img
 
 # %%
-def animate_lonlat(inputarray, lons, lats, heights, lev, cmax, trange=(0,4499,50), 
+def animate_lonlat(inputarray, lons, lats, heights, lev, trange=(0,4499,50), 
                    inputcols='cividis',
                    ptitle='Age of air', cunit='seconds',
+                   cmin=0.0, cmax=14.5,
                    savename='lonlat.gif'):
 
     im = []
     for t in range(trange[0], trange[1], trange[2]):
         frame_shot = lonlat_frame(inputarray, lons, lats, heights, lev, 
-                                  t, inputcols, ptitle, cunit, cmax)
+                                  t, inputcols, ptitle, cunit, cmin, cmax)
         im.append(frame_shot)
 
     im[0].save(savename, save_all=True, append_images=im[1:], optimize=False,

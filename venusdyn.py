@@ -119,32 +119,44 @@ def u_series(plobject, time_range=(0,-1), meaning=True, lat=16, lon=24, lev=40,
 
 # %%
 def wind_vectors(plobject, meaning=True, time_slice=-1, n=2, 
-                 qscale=2, level=40):
+                 qscale=2, level=40, wtype='Vertical'):
     
     """ Plot the horizontal and vertical wind on a model level in one figure."""
 
-    u = -plobject.data['vitu']
-    v = plobject.data['vitv']
-    w = plobject.data['vitw']
+    u = -1*plobject.data['vitu'][:,level,:,:]
+    v = plobject.data['vitv'][:,level,:,:]
+
+    if wtype=='Pressure':
+        w = plobject.data['vitw'][:,level,:,:]
+        unit = 'Pa/s'
+
+    elif wtype=='Vertical':
+        omega = plobject.data['vitw'][:,level,:,:]
+        temp = plobject.data['temp'][:,level,:,:]
+        pres = plobject.data['pres'][:,level,:,:]
+        w = -(omega*temp*plobject.RCO2)/(pres*plobject.g)
+        unit = 'm/s'
+    else:
+        print('Arg wtype must be either Pressure or Vertical')
 
     if meaning==True:
         u = np.mean(u, axis=0)
         v = np.mean(v, axis=0)
         w = np.mean(w, axis=0)
     else:
-        u = u[time_slice,:,:,:]
-        v = v[time_slice,:,:,:]
-        w = w[time_slice,:,:,:]
+        u = u[time_slice,:,:]
+        v = v[time_slice,:,:]
+        w = w[time_slice,:,:]
 
  #   X, Y = np.meshgrid(np.arange(0,len(plobject.lons)), np.arange(0,len(plobject.lats)))
     X, Y = np.meshgrid(plobject.lons, plobject.lats)
     fig, ax = plt.subplots(figsize=(8,5))
-    wplot = ax.contourf(plobject.lons, plobject.lats, w[level,:,:], 
+    wplot = ax.contourf(plobject.lons, plobject.lats, w, 
                         cmap='coolwarm', norm=TwoSlopeNorm(0))
     cbar = plt.colorbar(wplot, orientation='vertical', fraction=0.05)
-    cbar.set_label('Vertical wind, Pa/s', loc='center')
-    q1 = ax.quiver(X[::n, ::n], Y[::n, ::n], u[level, ::n, ::n],
-                   -v[level, ::n, ::n], angles='xy', scale_units='xy', scale=qscale)
+    cbar.set_label(f'Vertical wind, {unit}', loc='center')
+    q1 = ax.quiver(X[::n, ::n], Y[::n, ::n], u[::n, ::n],
+                   -v[::n, ::n], angles='xy', scale_units='xy', scale=qscale)
     ax.quiverkey(q1, X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
                  labelpos='E', coordinates='axes')
     plt.xlabel('Longitude')
@@ -214,7 +226,7 @@ def wmap(plobject, meaning=True, lev=30, time_slice=-1, wtype='Vertical'):
 
     fig, ax = plt.subplots(figsize=(8,6))
     wm = plt.contourf(plobject.lons, plobject.lats, w,
-                      levels=np.arange(-0.04,0.041,0.005), 
+#                      levels=np.arange(-0.04,0.041,0.005), 
                       cmap='coolwarm', norm=TwoSlopeNorm(0))
     plt.title(f'{wtype} velocity, h={plobject.heights[lev]} km, {titleterm}')
     plt.xlabel('Longitude [deg]')
@@ -225,6 +237,7 @@ def wmap(plobject, meaning=True, lev=30, time_slice=-1, wtype='Vertical'):
 
 # %%
 def zmage(plobject, hmin=0, hmax=20, time_slice=-1, convert2yr=True,
+          cmin=11.64, cmax=11.91,
          save=False, saveformat='png', savename='zmage.png'):
 
     """ Input: numpy array for age of air 
@@ -235,6 +248,7 @@ def zmage(plobject, hmin=0, hmax=20, time_slice=-1, convert2yr=True,
     ageo = plobject.data['age']
     ageo = ageo[time_slice,:,:,:]
     zmageo = np.mean(ageo, axis=-1)
+    levels = np.linspace(cmin, cmax, 40)
 
     if convert2yr==True:
         zmageo = zmageo/(60*60*24*360)
@@ -243,10 +257,11 @@ def zmage(plobject, hmin=0, hmax=20, time_slice=-1, convert2yr=True,
         cunit = 'seconds' 
 
     zmslice = zmageo[hmin:hmax,:]
-   # levels = np.linspace(np.min(zmslice),np.max(zmslice),40)
+ #   levels = np.linspace(np.min(zmslice),np.max(zmslice),40)
     
     plt.contourf(plobject.lats, plobject.heights[hmin:hmax], 
-                 zmslice,
+                 zmslice, 
+                 levels=levels,
                  cmap='cividis')
     plt.title('Age of air (zonal mean)')
     plt.xlabel('Latitude [deg]')
@@ -291,5 +306,92 @@ def age_map(plobject, lev=16, time_slice=-1, convert2yr=True,
         plt.close()
     else:
         plt.show()
+
+# %%
+def ageline(plobject, coords=(-0., -0.), sourcelev=22, line_lev=30, trange=(4000,4499),
+            convert2yr=True,
+            save=False, saveformat='png', savename='age_line.png'):
+
+    line_lat = np.where(plobject.lats==coords[0])[0][0]
+    line_lon = np.where(plobject.lons==coords[1])[0][0]
+    print(line_lat, line_lon)
+    ageo = plobject.data['age'][trange[0]:trange[1],:,line_lat,line_lon]
+
+    if convert2yr==True:
+        ageo = ageo/(60*60*24*360)
+        cunit = 'years'
+    else:
+        cunit = 'seconds' 
+
+    fig, ax = plt.subplots(figsize=(6,6))
+    plt.plot(ageo[:,sourcelev], color='b', label=f'h={plobject.heights[sourcelev]} km')
+    plt.plot(ageo[:,line_lev], color='r', label=f'h={plobject.heights[line_lev]} km')
+    plt.title(f'Age of air at h={plobject.heights[line_lev]} km, \
+              lat={plobject.lats[line_lat]}, \
+              lon={plobject.lons[line_lon]}')
+    plt.xlabel('Simulation time')
+    plt.ylabel(f'Age [{cunit}]')
+    plt.legend(loc='best')
+    if save==True:
+        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
+
+# %%
+def tracerline(plobject, coords=(-0., -0.), sourcelev=22, line_lev=30, trange=(4000,4499),
+            save=False, saveformat='png', savename='age_line.png'):
+
+    line_lat = np.where(plobject.lats==coords[0])[0][0]
+    line_lon = np.where(plobject.lons==coords[1])[0][0]
+    print(line_lat, line_lon)
+    ageo = plobject.data['aoa'][trange[0]:trange[1],:,line_lat,line_lon]
+
+    fig, ax = plt.subplots(figsize=(6,6))
+    plt.plot(ageo[:,sourcelev], color='b', label=f'h={plobject.heights[sourcelev]} km')
+    plt.plot(ageo[:,line_lev], color='r', label=f'h={plobject.heights[line_lev]} km')
+    plt.title(f'Tracer concentration at h={plobject.heights[line_lev]} km, \
+              lat={plobject.lats[line_lat]}, \
+              lon={plobject.lons[line_lon]}')
+    plt.xlabel('Simulation time')
+    plt.ylabel('Mixing ratio [kg/kg]')
+    plt.legend(loc='best')
+    if save==True:
+        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
+
+# %%
+def lonlatslice(plobject, cubename, lev, time_slice=-1,
+                save=False, saveformat='png', savename='lonlatslice.png'):
+
+    data = plobject.data[cubename][time_slice,lev,:,:]
+
+    if cubename=='duvdf':
+        ptitle = 'Boundary layer du'
+        punit = 'm/s2'
+    elif cubename=='duajs':
+        ptitle = 'Dry convection du'
+        punit = 'm/s2'
+    elif cubename=='dudyn':
+        ptitle = 'Dynamics du'
+        punit = 'm/s2'
+
+    fig, ax = plt.subplots(figsize=(8,6))
+    CS = plt.contourf(plobject.lons, plobject.lats, data,
+                      cmap='coolwarm', norm=TwoSlopeNorm(0))
+    plt.title(f'{ptitle}')
+    plt.xlabel('Longitude [deg]')
+    plt.ylabel('Latitude [deg]')
+
+    cbar = plt.colorbar(CS, orientation='vertical', fraction=0.05)
+    cbar.set_label(f'{punit}', loc='center')
+    if save==True:
+        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
+
 
 # %%
