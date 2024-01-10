@@ -14,14 +14,14 @@ def zmzw(plobject, meaning=True, time_slice=-1,
         meaning (default True) calculates the time mean
         time_slice (default -1) selects time if meaning=False """
 
-    zonal = -plobject.data['vitu']
+    zonal = plobject.data['vitu']
     if meaning==True:
         zonal = np.mean(zonal, axis=0)
     else:
         zonal = zonal[time_slice,:,:,:]
     zmean = np.mean(zonal, axis=-1) 
     
-    plt.contourf(plobject.lats, plobject.heights, zmean, 
+    plt.contourf(plobject.lats, plobject.heights, -zmean, 
                  cmap='RdBu', norm=TwoSlopeNorm(0))
     plt.title('Zonal mean zonal wind')
     plt.xlabel('Latitude [deg]')
@@ -74,14 +74,14 @@ def zmzw_snaps(plobject, time_range=(0,2),
         meaning (default True) calculates the time mean
         time_slice (default -1) selects time if meaning=False """
 
-    zonal = -plobject.data['vitu']
+    zonal = plobject.data['vitu']
     zmean = np.mean(zonal, axis=-1)
 
     for time_slice in range(time_range[0],time_range[1]):
         print(time_slice)
         savename = 'zmzw_' + str(time_slice) + '.' + saveformat
     
-        plt.contourf(plobject.lats, plobject.heights, zmean[time_slice,:,:], 
+        plt.contourf(plobject.lats, plobject.heights, -zmean[time_slice,:,:], 
                      levels=np.arange(-100, 101, 20), cmap='RdBu', 
                      norm=TwoSlopeNorm(0))
         plt.title('Zonal mean zonal wind')
@@ -100,7 +100,7 @@ def zmzw_snaps(plobject, time_range=(0,2),
 def u_series(plobject, time_range=(0,-1), meaning=True, lat=16, lon=24, lev=40,
              save=False, savename='u_series.png', saveformat='png'):
 
-    u_wind = -plobject.data['vitu']
+    u_wind = plobject.data['vitu']
     if meaning==True:
         u_wind = np.mean(u_wind[time_range[0]:time_range[-1],lev,lat,:], axis=-1)
         titleterm = f'Zonal mean zonal wind at h={int(plobject.heights[lev])} km, ' \
@@ -111,7 +111,7 @@ def u_series(plobject, time_range=(0,-1), meaning=True, lat=16, lon=24, lev=40,
                     f'lat={int(plobject.lats[lat])}, ' \
                     f'lon={int(plobject.lons[lon])}'
 
-    plt.plot(u_wind)
+    plt.plot(-u_wind)
     plt.title(f'{titleterm}')
     plt.ylabel('Wind speed [m/s]')
     plt.xlabel('Time [days?]')

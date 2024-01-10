@@ -58,6 +58,11 @@ class Planet:
         self.data = ds
         self.reflist = reflist
 
+    def close(self):
+        """ Closes netCDF file packaged in Planet data object """
+        self.data.close()
+        print('Planet object associated dataset has been closed')
+
     def contents(self):
         """ Prints reference list for easy formatted oversight of file contents"""
         print(*self.reflist, sep='\n')
@@ -76,6 +81,37 @@ class Planet:
             self.heights = np.array(heights50)
         else:
             print('Altitude in km not available')
+
+    def load_oasis(self, fn):
+        """ Load file and run set resolution for OASIS data reformatted
+            to use LMD-style metadata """
+        self.load_file(fn)
+
+        print('Resolution is ' +  str(len(self.data.variables['lat'][:])) + ' lat, '
+              + str(len(self.data['lon'][:])) + ' lon, '
+              + str(len(self.data.variables['presnivs'][:])) + ' height')
+        self.lons = np.round(self.data.variables['lon'][:])
+        self.lats = np.round(self.data.variables['lat'][:])
+        self.plevs = self.data.variables['presnivs'][:]
+        if len(self.data.variables['presnivs'][:]) == 50:
+            self.heights = np.array(heights50)
+        else:
+            print('Altitude in km not available')
+
+        self.area_weights()
+
+    def area_weights(self):
+        """ Calculate area weights if not included in output, e.g. for OASIS data"""
+        xlon, ylat = np.meshgrid(self.lons, self.lats)
+        dlat = np.deg2rad(np.abs(np.gradient(ylat, axis=0)))
+        dlon = np.deg2rad(np.abs(np.gradient(xlon, axis=1)))
+        rad = self.radius*1e3
+        dy = dlat*rad
+        dx = dlon*rad*np.cos(np.deg2rad(ylat))
+        areas = dy*dx
+        self.areas = areas
+        self.dy = dy
+        self.dx = dx
 
     def calc_cp(self):
         """ Formula LMDZ Venus uses to vary the specific heat with temperature"""
