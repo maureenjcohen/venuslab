@@ -107,7 +107,7 @@ class Planet:
         dlon = np.deg2rad(np.abs(np.gradient(xlon, axis=1)))
         rad = self.radius*1e3
         dy = dlat*rad
-        dx = dlon*rad*np.cos(np.deg2rad(ylat))
+        dx = dlon*rad*np.abs(np.cos(np.deg2rad(ylat)))
         areas = dy*dx
         self.areas = areas
         self.dy = dy

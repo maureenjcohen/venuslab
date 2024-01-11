@@ -7,7 +7,8 @@ from PIL import Image
 import io
 
 # %%
-def sphere(inputarray, lons, lats, i, j, inputcols, ptitle, cunit):
+def sphere(inputarray, lons, lats, i, j, inputcols, ptitle, htitle, cunit,
+           cmin, cmax):
 
     """ Creates a plot of a 2-D data array projected onto a sphere
         inputarray: The input data array. Must be 2-D
@@ -30,10 +31,11 @@ def sphere(inputarray, lons, lats, i, j, inputcols, ptitle, cunit):
     ax = plt.axes(projection=ortho)
     ax.set_global()
     # Create the figure
-
+    levels=levels = np.linspace(cmin, cmax, 40)
     plimg = ax.contourf(lon, lat, inputarray, transform=ccrs.PlateCarree(), 
+                        levels=levels,
                         cmap=inputcols)
-    ax.set_title(ptitle, color='white', y=1.05, fontsize=14)
+    ax.set_title(ptitle + ', ' + htitle, color='white', y=1.05, fontsize=14)
     cbar = fig.colorbar(plimg, orientation='vertical', extend='max')
     cbar.set_label(cunit, color='white')
     cbar.ax.yaxis.set_tick_params(color='white')
@@ -54,7 +56,8 @@ def sphere(inputarray, lons, lats, i, j, inputcols, ptitle, cunit):
 
 # %%
 def animate_sphere(inputarray, lons, lats, j, irange=(0, 360, 30), inputcols='hot', 
-                   ptitle='Surface radiation', cunit='W/m2',
+                   ptitle='Air temperature', htitle='Height in km', cunit='W/m2', 
+                   cmin=190, cmax=230,
                    savename='test.gif'):
     
     """ Take 2-D orthographic projections onto a globe and turn them into a
@@ -65,9 +68,27 @@ def animate_sphere(inputarray, lons, lats, j, irange=(0, 360, 30), inputcols='ho
 
     im = []
     for i in range(irange[0], irange[1], irange[2]):
-        frame_shot = sphere(inputarray, lons, lats, i, j, inputcols, ptitle, cunit)
+        frame_shot = sphere(inputarray, lons, lats, i, j, inputcols, ptitle, htitle, 
+                            cunit, cmin, cmax)
         im.append(frame_shot)
         # Create PIL Image of each generated plot and append to list
+
+    im[0].save(savename, save_all=True, append_images=im[1:], optimize=False,
+               duration=0.5, loop=0)
+    # Save our list of frames as a gif
+
+# %%
+def time_sphere(inputarray, lons, lats, i, j, trange=(500, 600, 5), inputcols='plasma',
+                ptitle='Air temperature', htitle='Height in km', cunit='K',
+                cmin=190, cmax=230,
+                savename='timelapse.gif'):
+    
+    im = []
+    for t in range(trange[0], trange[1], trange[2]):
+        frame_shot = sphere(inputarray[t,:,:], lons, lats, i, j, inputcols, ptitle, htitle,
+                            cunit, cmin, cmax)
+        im.append(frame_shot)
+    # Create PIL Image of each generated plot and append to list
 
     im[0].save(savename, save_all=True, append_images=im[1:], optimize=False,
                duration=0.5, loop=0)
