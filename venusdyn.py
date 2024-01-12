@@ -65,7 +65,7 @@ def zmmw(plobject, meaning=True, time_slice=-1,
         plt.show()
 
 #  %%
-def zmzw_snaps(plobject, time_range=(0,2), 
+def zmzw_snaps(plobject, time_range=(0,100,10), 
                save=False, saveformat='png'):
 
     """ Input: numpy array for zonal wind 
@@ -77,12 +77,12 @@ def zmzw_snaps(plobject, time_range=(0,2),
     zonal = plobject.data['vitu']
     zmean = np.mean(zonal, axis=-1)
 
-    for time_slice in range(time_range[0],time_range[1]):
+    for time_slice in range(time_range[0],time_range[1], time_range[2]):
         print(time_slice)
         savename = 'zmzw_' + str(time_slice) + '.' + saveformat
     
         plt.contourf(plobject.lats, plobject.heights, -zmean[time_slice,:,:], 
-                     levels=np.arange(-100, 101, 20), cmap='RdBu', 
+                     levels=np.arange(-160, 40, 20), cmap='RdBu', 
                      norm=TwoSlopeNorm(0))
         plt.title('Zonal mean zonal wind')
         plt.xlabel('Latitude')
@@ -387,6 +387,49 @@ def lonlatslice(plobject, cubename, lev, time_slice=-1,
 
     cbar = plt.colorbar(CS, orientation='vertical', fraction=0.05)
     cbar.set_label(f'{punit}', loc='center')
+    if save==True:
+        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
+
+
+# %%
+def vprofile(plobject, key, coords, ptitle, xlab, unit,
+             hmin, hmax,
+             zmean=False, meaning=False, time_slice=-1, 
+             convert2yr=True,
+             save=False, saveformat='png', savename='lonlatslice.png'):
+
+    """ Plot vertical profiles at selected locations
+        Can specify time mean and/or zonal mean
+        Coords must be a list of latxlon tuples
+        Assumes a 4-D cube                      """
+
+    if meaning==True:
+        cube = np.mean(plobject.data[key], axis=0)
+    else:
+        cube = plobject.data[key][time_slice,:,:,:]
+
+    if zmean==True:
+        cube = np.mean(cube, axis=-1)
+
+    if key=='age' and convert2yr==True:
+        cube = cube/(60*60*24*360)
+        unit = 'years'
+    elif key=='age' and convert2yr==False:
+        unit = 'seconds' 
+
+    fig, ax = plt.subplots(figsize=(6,8))
+
+    for coord in coords:
+        lat_lab, lon_lab = plobject.lats[coord[0]], plobject.lons[coord[1]]
+        plt.plot(cube[hmin:hmax,coord[0],coord[1]], plobject.heights[hmin:hmax], 
+                 label=f'{lat_lab}$^\circ$ lat, {lon_lab}$^\circ$ lon')
+    plt.title(f'Vertical profile of {ptitle}')
+    plt.xlabel(f'{xlab} [{unit}]')
+    plt.ylabel('Height [km]')
+    plt.legend()
     if save==True:
         plt.savefig(savename, format=saveformat, bbox_inches='tight')
         plt.close()

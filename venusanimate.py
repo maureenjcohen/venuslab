@@ -31,7 +31,7 @@ def sphere(inputarray, lons, lats, i, j, inputcols, ptitle, htitle, cunit,
     ax = plt.axes(projection=ortho)
     ax.set_global()
     # Create the figure
-    levels=levels = np.linspace(cmin, cmax, 40)
+    levels=np.linspace(cmin, cmax, 30)
     plimg = ax.contourf(lon, lat, inputarray, transform=ccrs.PlateCarree(), 
                         levels=levels,
                         cmap=inputcols)
