@@ -123,7 +123,7 @@ def wind_vectors(plobject, meaning=True, time_slice=-1, n=2,
     
     """ Plot the horizontal and vertical wind on a model level in one figure."""
 
-    u = -1*plobject.data['vitu'][:,level,:,:]
+    u = plobject.data['vitu'][:,level,:,:]
     v = plobject.data['vitv'][:,level,:,:]
 
     if wtype=='Pressure':
@@ -147,16 +147,18 @@ def wind_vectors(plobject, meaning=True, time_slice=-1, n=2,
         u = u[time_slice,:,:]
         v = v[time_slice,:,:]
         w = w[time_slice,:,:]
+    print(w[15,7], u[15,7])
+    print(v[15,7])
 
- #   X, Y = np.meshgrid(np.arange(0,len(plobject.lons)), np.arange(0,len(plobject.lats)))
+#    X, Y = np.meshgrid(np.arange(0,len(plobject.lons)), np.arange(0,len(plobject.lats)))
     X, Y = np.meshgrid(plobject.lons, plobject.lats)
     fig, ax = plt.subplots(figsize=(8,5))
     wplot = ax.contourf(plobject.lons, plobject.lats, w, 
-                        cmap='coolwarm', norm=TwoSlopeNorm(0))
+                      cmap='coolwarm', norm=TwoSlopeNorm(0))
     cbar = plt.colorbar(wplot, orientation='vertical', fraction=0.05)
     cbar.set_label(f'Vertical wind, {unit}', loc='center')
-    q1 = ax.quiver(X[::n, ::n], Y[::n, ::n], u[::n, ::n],
-                   -v[::n, ::n], angles='xy', scale_units='xy', scale=qscale)
+    q1 = ax.quiver(X[::n, ::n], Y[::n, ::n], -u[::n, ::n],
+                   v[::n, ::n], angles='xy', scale_units='xy', scale=qscale)
     ax.quiverkey(q1, X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
                  labelpos='E', coordinates='axes')
     plt.xlabel('Longitude')

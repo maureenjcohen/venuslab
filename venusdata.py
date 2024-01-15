@@ -73,7 +73,7 @@ class Planet:
         print('Resolution is ' +  str(len(self.data.variables['lat'][:])) + ' lat, '
               + str(len(self.data['lon'][:])) + ' lon, '
               + str(len(self.data.variables['presnivs'][:])) + ' height')
-        self.lons = np.round(-self.data.variables['lon'][:])
+        self.lons = np.round(self.data.variables['lon'][:])
         self.lats = np.round(self.data.variables['lat'][:])
         self.areas = self.data.variables['aire'][:]
         self.plevs = self.data.variables['presnivs'][:]
