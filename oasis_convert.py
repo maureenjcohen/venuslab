@@ -190,6 +190,7 @@ def append_data(inpath, appendpath):
 
     return batch_end
 
+# %%
 def initial_wpharm(ncout, etadata, zetadata, divdata, uchidata, vchidata, upsidata, vpsidata):
 
     eta_out = ncout.createVariable('eta', 'float32', ('time_counter', 'presnivs', 'lat', 'lon'))
@@ -247,7 +248,7 @@ def add_wpharm(ncout, tstart):
                   from windspharm.standard import VectorWind
 
         This function should be run in a loop with the structure:
-            for t in range(0, len(nc['time_counter][:])+1, tstep):
+            for t in range(0, len(ncout['time_counter][:])+1, tstep):
                 add_wpharm(ncout, t) """
 
     print(ncout.variables.keys())
