@@ -190,6 +190,138 @@ def append_data(inpath, appendpath):
 
     return batch_end
 
+def initial_wpharm(ncout, etadata, zetadata, divdata, uchidata, vchidata, upsidata, vpsidata):
 
+    eta_out = ncout.createVariable('eta', 'float32', ('time_counter', 'presnivs', 'lat', 'lon'))
+    eta_out.units = 's-1'
+    eta_out.long_name = 'Absolute vorticity'
+    eta_out[:tstep,:,:,:] = etadata
+    print('Initial eta written')
+
+    zeta_out = ncout.createVariable('zeta', 'float32', ('time_counter', 'presnivs', 'lat', 'lon'))
+    zeta_out.units = 's-1'
+    zeta_out.long_name = 'Relative vorticity'
+    zeta_out[:tstep,:,:,:] = zetadata
+    print('Initial zeta written')
+
+    div_out = ncout.createVariable('div', 'float32', ('time_counter', 'presnivs', 'lat', 'lon'))
+    div_out.units = 's-1'
+    div_out.long_name = 'Divergence'
+    div_out[:tstep,:,:,:] = divdata
+    print('Initial div written')
+
+    uchi_out = ncout.createVariable('uchi', 'float32', ('time_counter', 'presnivs', 'lat', 'lon'))
+    uchi_out.units = 's-1'
+    uchi_out.long_name = 'Divergent component of wind (u)'
+    uchi_out[:tstep,:,:,:] = uchidata
+    print('Initial uchi written')
+
+    vchi_out = ncout.createVariable('vchi', 'float32', ('time_counter', 'presnivs', 'lat', 'lon'))
+    vchi_out.units = 's-1'
+    vchi_out.long_name = 'Divergent component of wind (v)'
+    vchi_out[:tstep,:,:,:] = vchidata
+    print('Initial vchi written')
+
+    upsi_out = ncout.createVariable('upsi', 'float32', ('time_counter', 'presnivs', 'lat', 'lon'))
+    upsi_out.units = 's-1'
+    upsi_out.long_name = 'Rotational component of wind (u)'
+    upsi_out[:tstep,:,:,:] = upsidata
+    print('Initial upsi written')
+
+    vpsi_out = ncout.createVariable('vpsi', 'float32', ('time_counter', 'presnivs', 'lat', 'lon'))
+    vpsi_out.units = 's-1'
+    vpsi_out.long_name = 'Rotational component of wind (v)'
+    vpsi_out[:tstep,:,:,:] = vpsidata
+    print('Initial vpsi written')
+    print('Initial data block written')
+
+
+# %%
+def add_wpharm(ncout, tstart):
+
+    """ Add windspharm calculated components to LMD-formatted dataset
+
+        Input: a netcdf4 dataset which has been opened in r+ mode
+
+        Requires: import windspharm
+                  from windspharm.standard import VectorWind
+
+        This function should be run in a loop with the structure:
+            for t in range(0, len(nc['time_counter][:])+1, tstep):
+                add_wpharm(ncout, t) """
+
+    print(ncout.variables.keys())
+    tend = tstart+tstep
+    print(f'Start time: {tstart}, end time: {tend}')
+
+    etalist = []
+    zetalist = []
+    divlist = []
+    uchilist = []
+    upsilist = []
+    vchilist = []
+    vpsilist = []
+    for t in range(tstart,tend):
+        eta_h = []
+        zeta_h = []
+        div_h = []
+        uchi_h = []
+        upsi_h = []
+        vchi_h = []
+        vpsi_h = []
+        for h in range(0,len(ncout['presnivs'][:])):
+            winds = VectorWind(ncout['vitu'][t,h,:,:], ncout['vitv'][t,h,:,:])
+
+            eta = winds.absolutevorticity()
+            eta_h.append(eta)
+
+            zeta, div = winds.vrtdiv()
+            zeta_h.append(zeta)
+            div_h.append(div)
+
+            uchi,vchi,upsi,vpsi = winds.helmholtz()
+            uchi_h.append(uchi)
+            vchi_h.append(vchi)
+            upsi_h.append(upsi)
+            vpsi_h.append(vpsi)
+        
+        etalist.append(eta_h)
+        zetalist.append(zeta_h)
+        divlist.append(div_h)
+        uchilist.append(uchi_h)
+        upsilist.append(upsi_h)
+        vchilist.append(vchi_h)
+        vpsilist.append(vpsi_h)
+        print(f'Completed time {t}')
+
+    etadata = np.array(etalist)
+    zetadata = np.array(zetalist)
+    divdata = np.array(divlist)
+    uchidata = np.array(uchilist)
+    upsidata = np.array(upsilist)
+    vchidata = np.array(vchilist)
+    vpsidata = np.array(vpsilist)
+
+    if tstart==0:
+        print('Initial write of new variables')      
+        initial_wpharm(ncout, etadata, zetadata, divdata, uchidata, vchidata, upsidata, vpsidata)
+        print(ncout.variables.keys())
+        print('Flushing data in memory to disk')
+        ncout.sync()
+
+    else:
+        ncout['eta'][tstart:tend,:,:,:] = etadata
+        ncout['zeta'][tstart:tend,:,:,:] = zetadata
+        ncout['div'][tstart:tend,:,:,:] = divdata
+        ncout['uchi'][tstart:tend,:,:,:] = uchidata
+        ncout['vchi'][tstart:tend,:,:,:] = vchidata
+        ncout['upsi'][tstart:tend,:,:,:] = upsidata
+        ncout['vpsi'][tstart:tend,:,:,:] = vpsidata
+        print(f'Variables written for {tstart} to {tend}')
+        print('Flushing data in memory to disk')
+        ncout.sync()
+
+
+     
 
 # %%
