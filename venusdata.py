@@ -77,6 +77,7 @@ class Planet:
         self.lats = np.round(self.data.variables['lat'][:])
         self.areas = self.data.variables['aire'][:]
         self.plevs = self.data.variables['presnivs'][:]
+        self.tinterval = np.diff(self.data['time_counter'][0:2])[0]
         if len(self.data.variables['presnivs'][:]) == 50:
             self.heights = np.array(heights50)
         else:
@@ -93,6 +94,7 @@ class Planet:
         self.lons = np.round(self.data.variables['lon'][:])
         self.lats = np.round(self.data.variables['lat'][:])
         self.plevs = self.data.variables['presnivs'][:]
+        self.tinterval = np.diff(self.data['time_counter'][0:2])[0]
         if len(self.data.variables['presnivs'][:]) == 50:
             self.heights = np.array(heights50)
         else:
@@ -177,5 +179,3 @@ def local_time(plobject, time_slice=-1):
     new_hours = list(np.roll(hours, roll_step))
 
     return new_hours
-
-# %%
