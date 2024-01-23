@@ -438,29 +438,3 @@ def vprofile(plobject, key, coords, ptitle, xlab, unit,
         plt.close()
     else:
         plt.show()
-
-# %%
-def age_frac(plobject, coords=(-0., -0.), line_lev=-1, trange=(0,-1),
-            save=False, saveformat='png', savename='tracerfrac_line.png'):
-
-    line_lat = np.where(plobject.lats==coords[0])[0][0]
-    line_lon = np.where(plobject.lons==coords[1])[0][0]
-    print(line_lat, line_lon)
-    ageo = plobject.data['age'][trange[0]:trange[1],:,line_lat,line_lon]
-    sim_time = plobject.tinterval*len(plobject.data['time_counter'])
-    tr_frac = ageo[:,line_lev]/sim_time
-
-    fig, ax = plt.subplots(figsize=(6,6))
-    plt.plot(tr_frac)
-    plt.title(f'Ratio of AoA at model top to source at \
-              lat={plobject.lats[line_lat]}, \
-              lon={plobject.lons[line_lon]}')
-    plt.xlabel('Simulation time')
-    plt.ylabel('Age fraction')
-    if save==True:
-        plt.savefig(savename, format=saveformat, bbox_inches='tight')
-        plt.close()
-    else:
-        plt.show()
-
-# %%
