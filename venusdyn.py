@@ -301,12 +301,10 @@ def vprofile(plobject, key, coords, ptitle, xlab, unit,
     plt.title(f'Vertical profile of {ptitle}')
     plt.xlabel(f'{xlab} [{unit}]')
     plt.ylabel('Height [km]')
+    plt.xlim((0,15))
     plt.legend()
     if save==True:
         plt.savefig(savename, format=saveformat, bbox_inches='tight')
         plt.close()
     else:
         plt.show()
-
-
-# %%
