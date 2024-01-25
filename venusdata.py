@@ -10,8 +10,8 @@ import numpy as np
 ## Radius in km, gravitational constant in m/s2, periods in Earth days,
 ## rotation rate in s-1, surface pressure in bars, molecular mass in kg/mol
 venusdict = {'radius': 6051.3, 'g': 8.87, 'rotperiod' : 243.0, 
-             'revperiod': 224.7, 'rotrate': 2.99e-07, 'psurf': 92,
-             'molmass': 0.04344, 'RCO2' : 287.05,
+             'revperiod': 224.7, 'rotrate': 2.99e-07, 'psurf': 92.,
+             'molmass': 0.04344, 'RCO2' : 287.05, 'rhoconst': 65.,
              'name': 'Venus'}
 ## Heights in km for 50-level sims
 heights50 = [0.00, 0.03, 0.12, 0.32, 0.68, 1.23, 2.03, 3.10, 4.50, 6.23, 8.35,
