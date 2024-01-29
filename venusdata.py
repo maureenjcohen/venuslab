@@ -148,6 +148,11 @@ class Planet:
         w_wind = -(self.data['vitw'][:]/(self.rho*self.g))
         self.w_wind = w_wind
 
+    def set_times(self):
+        """ Calculate local time array for each time output
+            and add to Planet object"""
+        self.local_time = all_times(self)
+
     def total_area(self):
         """ Calculate total surface area in m2"""
         self.area = np.sum(self.data['aire'][:])
@@ -157,7 +162,7 @@ class Planet:
         self.total_area()
 
 # %%
-def local_time(plobject, time_slice=-1):
+def local_time(plobject, time_slice=-1, silent='no'):
     
     """ A function that calculates the local time for a
     snapshot from a given timestep."""
@@ -169,8 +174,11 @@ def local_time(plobject, time_slice=-1):
     subsol = np.argmax(rad_toa[time_slice,equator,:])
     # Find column number of longitude where solar
     # radiation is currently at a maximum
-    print('Local noon is at col ' + str(subsol))
-    print('Local noon is at lon ' + str(plobject.lons[subsol]))
+    if silent=='no':
+        print('Local noon is at col ' + str(subsol))
+        print('Local noon is at lon ' + str(plobject.lons[subsol]))
+    else:
+        pass
     dt = 24/len(plobject.lons)
     hours = np.arange(0,24,dt)
     # Array of hour coordinates with same
@@ -179,3 +187,42 @@ def local_time(plobject, time_slice=-1):
     new_hours = list(np.roll(hours, roll_step))
 
     return new_hours
+
+# %%
+def all_times(plobject):
+
+    """ Create array of local times for entire time dimension"""
+    time_list = []
+    for t in range(0, len(plobject.data['time_counter'])):
+        hours = local_time(plobject, time_slice=t, silent='yes')
+        time_list.append(hours)
+    time_array = np.array(time_list)
+
+    return time_array
+
+
+# %%
+def local_mean(plobject, key, lev, trange):
+
+    """ Calculate the mean of the input field with respect
+        to the local time, i.e. mean over longitudes   """
+    try:
+        plobject.local_time
+    except AttributeError:
+        print('Local times not calculated')
+        print('Calculating local times. This will take a minute.')
+        plobject.set_times()
+
+    data = plobject.data[key][trange[0]:trange[1],lev,:,:]
+    times_needed = plobject.local_time[trange[0]:trange[1]]
+    data_list = []
+    for t in range(0,len(trange)):
+        noon_col = np.where(times_needed[t]==12.0[0][0])
+        shifted_data = np.roll(data[t,:,:], -noon_col, axis=1)
+        data_list.append(shifted_data)
+
+    shifted_array = np.array(data_list)
+    meaned_data = np.mean(shifted_array, axis=0)
+
+    return meaned_data
+    
