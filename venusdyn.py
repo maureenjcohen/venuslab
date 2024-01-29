@@ -302,9 +302,13 @@ def vprofile(plobject, key, coords, ptitle, xlab, unit,
     plt.xlabel(f'{xlab} [{unit}]')
     plt.ylabel('Height [km]')
     plt.xlim((0,15))
+    plt.yticks(ticks=plobject.heights)
+    plt.grid()
     plt.legend()
     if save==True:
         plt.savefig(savename, format=saveformat, bbox_inches='tight')
         plt.close()
     else:
         plt.show()
+
+# %%

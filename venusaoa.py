@@ -6,7 +6,7 @@ from matplotlib.colors import TwoSlopeNorm
 
 # %%
 def ageline(plobject, coords=(-0., -0.), sourcelev=22, line_lev=30, trange=(4000,4499),
-            convert2yr=True,
+            convert2yr=True, fractional=False,
             save=False, saveformat='png', savename='age_line.png'):
 
     line_lat = np.where(plobject.lats==coords[0])[0][0]
@@ -17,8 +17,14 @@ def ageline(plobject, coords=(-0., -0.), sourcelev=22, line_lev=30, trange=(4000
     if convert2yr==True:
         ageo = ageo/(60*60*24*360)
         cunit = 'years'
+        interval = plobject.tinterval/(60*60*24*360)
     else:
-        cunit = 'seconds' 
+        cunit = 'seconds'
+        interval = plobject.tinterval
+
+    if fractional==True:
+        sim_times = np.arange(trange[0],trange[1])*interval
+        ageo = ageo/sim_times[:,np.newaxis]
 
     fig, ax = plt.subplots(figsize=(6,6))
     plt.plot(ageo[:,sourcelev], color='b', label=f'h={plobject.heights[sourcelev]} km')
