@@ -86,13 +86,13 @@ def zmage(plobject, hmin=0, hmax=20, time_slice=-1, convert2yr=True,
         cunit = 'years'
     else:
         cunit = 'seconds' 
-
+ 
     zmslice = zmageo[hmin:hmax,:]
  #   levels = np.linspace(np.min(zmslice),np.max(zmslice),40)
     
     plt.contourf(plobject.lats, plobject.heights[hmin:hmax], 
                  zmslice, 
-                 levels=levels,
+#                 levels=levels,
                  cmap='cividis')
     plt.title('Age of air (zonal mean)')
     plt.xlabel('Latitude [deg]')
