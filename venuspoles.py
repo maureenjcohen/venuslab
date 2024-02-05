@@ -20,7 +20,7 @@ def add_circle_boundary(ax):
     ax.set_boundary(circle, transform=ax.transAxes)
 
 # %%
-def pvsnap(plobject, lev=27, time_slice=-1):
+def pvsnap(plobject, lev=40, time_slice=-1):
     """ Potential vorticity at north and south pole for one time output """
 
     pfactor = ((100000/plobject.data['presnivs'][:])**(2/7))
@@ -40,16 +40,11 @@ def pvsnap(plobject, lev=27, time_slice=-1):
     fig.patch.set_facecolor('black') # Background colour
     ax = plt.axes(projection=ortho)
     ax.set_global()
-<<<<<<< HEAD
-    # Create the figure
-    levels=np.linspace(-3.5,3.5,30)
-=======
     ax.gridlines()
 #    ax.set_extent([-180, 180, -90, -60], crs=ccrs.PlateCarree())
 #    add_circle_boundary(ax)
  
     levels=np.linspace(-0.0003,0.0003,30)
->>>>>>> 55bd335de389b3c139e4df06f2e7425ba199ee22
     plimg = ax.contourf(lon, lat, pvcube, transform=ccrs.PlateCarree(), 
 #                        levels=levels,
                         cmap='RdBu', norm=TwoSlopeNorm(0))
@@ -64,22 +59,15 @@ def pvsnap(plobject, lev=27, time_slice=-1):
     plt.show()
 
 # %%
-<<<<<<< HEAD
-def zetasnap(plobject, lev=27, time_slice=-1):
-=======
 def zetasnap(plobject, cmin, cmax, lev=28, time_slice=-1):
->>>>>>> 55bd335de389b3c139e4df06f2e7425ba199ee22
     """ Relative vorticity at north and south pole for one time output """
    
     zetacube = plobject.data['zeta'][time_slice,lev,:,:]
     lon = np.linspace(-180, 180, len(plobject.lons))
     lat = np.linspace(-90, 90, len(plobject.lats))
     # Make a lon-lat grid based on the number of lon/lat columns (model resolution)
-<<<<<<< HEAD
-=======
     plev = np.round(plobject.data['presnivs'][lev]*0.01) # Pressure in mb
 
->>>>>>> 55bd335de389b3c139e4df06f2e7425ba199ee22
     proj = ccrs.Orthographic(central_longitude=0, central_latitude=-90)
     # Specify projection 
     fig = plt.figure(figsize=(8, 6))
@@ -87,14 +75,6 @@ def zetasnap(plobject, cmin, cmax, lev=28, time_slice=-1):
     ax = plt.axes(projection=proj)
     ax.set_global()
     ax.gridlines()
-<<<<<<< HEAD
-    # Create the figure
-    levels=np.linspace(-16,8,40)
-    plimg = ax.contourf(lon, lat, zetacube*1e05, transform=ccrs.PlateCarree(), 
-                        levels=levels,
-                        cmap='RdBu', norm=TwoSlopeNorm(0))
-    ax.set_title(f'Relative vorticity, h={plobject.heights[lev]} km', 
-=======
     ax.set_extent([-180, 180, -90, -60], crs=ccrs.PlateCarree())
     add_circle_boundary(ax)
     # Create the figure
@@ -103,7 +83,6 @@ def zetasnap(plobject, cmin, cmax, lev=28, time_slice=-1):
                         levels=levels,
                         cmap='coolwarm', norm=TwoSlopeNorm(0))
     ax.set_title(f'Relative vorticity, h={plev} mb', 
->>>>>>> 55bd335de389b3c139e4df06f2e7425ba199ee22
                  color='white',
                  y=1.05, fontsize=14)
     cbar = fig.colorbar(plimg, orientation='vertical', extend='max')
@@ -111,29 +90,6 @@ def zetasnap(plobject, cmin, cmax, lev=28, time_slice=-1):
     cbar.ax.yaxis.set_tick_params(color='white')
     plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='white')
     # Create the contourfill plot and colorbar
-<<<<<<< HEAD
-    plt.show()
-
-# %%
-def vortex_vectors(plobject, lev=27, time_slice=-1, n=2, qscale=1):
-
-    crs = ccrs.RotatedPole(pole_longitude=0, pole_latitude=-90)
-    lon = np.linspace(-180, 180, len(plobject.lons))
-    lat = np.linspace(-90, -60, len(plobject.lats))
-
-    ax = plt.axes(projection=ccrs.Orthographic(central_longitude=0, central_latitude=-90))
-    fig = plt.figure(figsize=(8, 6))
-    fig.patch.set_facecolor('black') # Background colour
-    ax.set_global()
-    ax.gridlines() 
-
-    ax.quiver(lon[::n], lat[::n], 
-              plobject.data['vitu'][time_slice,lev,::n,::n],
-              plobject.data['vitv'][time_slice,lev,::n,::n], 
-              transform=crs,
-              angles='xy', scale_units='xy', scale=qscale)  
-    plt.show()
-=======
 
     # The code block below creates a buffer and saves the plot to it.
     # This avoids having to actually save the plot to the hard drive.
@@ -239,5 +195,4 @@ def animate_poles(plobject, lev, trange,
     # Save our list of frames as a gif
 
 
->>>>>>> 55bd335de389b3c139e4df06f2e7425ba199ee22
 # %%
