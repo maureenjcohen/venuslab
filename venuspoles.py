@@ -176,30 +176,41 @@ def contour_comparison(plobject, lev=30, time_slice=-1):
     """ Plot values of input fields at the southern pole at
         the same time and model level                   """
     
-    
+    air_temp = plobject.data['temp'][time_slice,lev,:,:]
+    div = plobject.data['div'][time_slice,lev,:,:]
+    rel_vort = plobject.data['zeta'][time_slice,lev,:,:]
+    zm_zeta = np.mean(rel_vort, axis=-1)
+    eddy_zeta = rel_vort - zm_zeta[:,np.newaxis]
 
     fig, ax = plt.subplots(1, 3,
                            subplot_kw={'projection': ccrs.Orthographic(0,-90)},
                            figsize=(12,6))
-   
-    im = ax[1].imshow(imcube[levs[lev],:,:], 
-                        cmap=colmap,
-                        transform=ccrs.PlateCarree(),
-                        vmin=cmin,
-                        vmax=cmax)
+    
+    im_temp = ax[0].imshow(air_temp, cmap='Reds', vmin=235, vmax=245,
+                      transform=ccrs.PlateCarree())    
+    ax[0].set_title('Air temperature [K]', size=14)
+    ax[0].gridlines()
+    ax[0].set_extent([-180, 180, -90, -60], crs=ccrs.PlateCarree())
+    add_circle_boundary(ax[0])
+    fig.colorbar(im_temp, ax=ax[0], orientation='horizontal')
 
-        
-    ax[1].set_title(f'{level_height} mbar', size=14)
+    im_div = ax[1].imshow(div*1e6, cmap='seismic',
+                      transform=ccrs.PlateCarree(), norm=TwoSlopeNorm(0))    
+    ax[1].set_title('Divergence [$10^{-6}$ s-1]', size=14)
     ax[1].gridlines()
     ax[1].set_extent([-180, 180, -90, -60], crs=ccrs.PlateCarree())
     add_circle_boundary(ax[1])
-    print(f'Level {level_height} added')
+    fig.colorbar(im_div, ax=ax[1], orientation='horizontal')
 
-    cbar_ax = fig.add_axes([0.15, 0.2, 0.75, 0.02])
-    cbar = fig.colorbar(im, cax=cbar_ax, orientation='horizontal',
-                        extend='both')
-    cbar.set_label(label=clabel, size=14)
-    fig.suptitle('Southern polar vortex', size=18, y=0.85)
+    im_zeta = ax[2].imshow(eddy_zeta*1e6, cmap='coolwarm',
+                      transform=ccrs.PlateCarree(), norm=TwoSlopeNorm(0))    
+    ax[2].set_title('Eddy relative vorticity [$10^{-6}$ s-1]', size=14)
+    ax[2].gridlines()
+    ax[2].set_extent([-180, 180, -90, -60], crs=ccrs.PlateCarree())
+    add_circle_boundary(ax[2])
+    fig.colorbar(im_zeta, ax=ax[2], orientation='horizontal')
+
+    fig.suptitle(f'Southern polar vortex, {np.round(plobject.plevs[lev]*0.01,0)} mbar', size=18, y=0.9)
     plt.show()
         
 
