@@ -136,11 +136,11 @@ def vortex_vectors(plobject, key='zeta', levs=[25,30,35], time_slice=-1, n=2, qs
 
     heights = []
     for l in levs:
-        h = plobject.heights[l]
+        h = plobject.plevs[l]
         heights.append(h)
    
     for lev in range(0,len(levs)):
-        level_height = heights[lev]
+        level_height = np.round(heights[lev]*0.01,0)
         im = ax[lev].imshow(imcube[levs[lev],:,:], 
                         cmap=colmap,
                         transform=ccrs.PlateCarree(),
@@ -157,11 +157,43 @@ def vortex_vectors(plobject, key='zeta', levs=[25,30,35], time_slice=-1, n=2, qs
                        width=0.009,
                        regrid_shape=20)
         
-        ax[lev].set_title(f'{level_height} km', size=14)
+        ax[lev].set_title(f'{level_height} mbar', size=14)
         ax[lev].gridlines()
         ax[lev].set_extent([-180, 180, -90, -60], crs=ccrs.PlateCarree())
         add_circle_boundary(ax[lev])
         print(f'Level {level_height} added')
+
+    cbar_ax = fig.add_axes([0.15, 0.2, 0.75, 0.02])
+    cbar = fig.colorbar(im, cax=cbar_ax, orientation='horizontal',
+                        extend='both')
+    cbar.set_label(label=clabel, size=14)
+    fig.suptitle('Southern polar vortex', size=18, y=0.85)
+    plt.show()
+
+# %%
+def contour_comparison(plobject, lev=30, time_slice=-1):
+
+    """ Plot values of input fields at the southern pole at
+        the same time and model level                   """
+    
+    
+
+    fig, ax = plt.subplots(1, 3,
+                           subplot_kw={'projection': ccrs.Orthographic(0,-90)},
+                           figsize=(12,6))
+   
+    im = ax[1].imshow(imcube[levs[lev],:,:], 
+                        cmap=colmap,
+                        transform=ccrs.PlateCarree(),
+                        vmin=cmin,
+                        vmax=cmax)
+
+        
+    ax[1].set_title(f'{level_height} mbar', size=14)
+    ax[1].gridlines()
+    ax[1].set_extent([-180, 180, -90, -60], crs=ccrs.PlateCarree())
+    add_circle_boundary(ax[1])
+    print(f'Level {level_height} added')
 
     cbar_ax = fig.add_axes([0.15, 0.2, 0.75, 0.02])
     cbar = fig.colorbar(im, cax=cbar_ax, orientation='horizontal',
@@ -194,5 +226,36 @@ def animate_poles(plobject, lev, trange,
                duration=0.5, loop=0)
     # Save our list of frames as a gif
 
+
+# %%
+def zonal_temp(plobject, meaning=True, time_slice=-1, hmin=25, hmax=49,
+               save=False, savename='zm_temp.png', saveformat='png'):
+    
+    """ Plot zonal mean temperature """
+
+    if meaning==True:
+        air_temp = np.mean(plobject.data['temp'][:,hmin:hmax,:,:], axis=0)
+    else:
+        air_temp = plobject.data['temp'][time_slice,hmin:hmax,:,:]
+
+    zonal_temp = np.mean(air_temp, axis=-1)
+    levels=np.arange(160,440,4)
+    fig, ax = plt.subplots(figsize=(6,6))
+    plt.contourf(plobject.lats, plobject.plevs[hmin:hmax]*0.01, 
+                 zonal_temp, 
+                 levels=levels,
+                 cmap='hot')
+    plt.title('Air temperature (zonal mean)')
+    plt.xlabel('Latitude [deg]')
+    plt.ylabel('Pressure [mbar]')
+    ax.set_yscale('log')
+    plt.gca().invert_yaxis()
+    cbar = plt.colorbar()
+    cbar.set_label('K')
+    if save==True:
+        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
 
 # %%
