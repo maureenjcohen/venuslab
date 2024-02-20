@@ -238,6 +238,7 @@ def animate_poles(plobject, lev, trange,
     # Save our list of frames as a gif
 
 
+
 # %%
 def zonal_temp(plobject, meaning=True, time_slice=-1, hmin=25, hmax=49,
                save=False, savename='zm_temp.png', saveformat='png'):
@@ -269,4 +270,4 @@ def zonal_temp(plobject, meaning=True, time_slice=-1, hmin=25, hmax=49,
     else:
         plt.show()
 
-# %%
+:
