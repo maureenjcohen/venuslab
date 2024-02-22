@@ -177,6 +177,8 @@ def contour_comparison(plobject, lev=30, time_slice=-1):
         the same time and model level                   """
     
     air_temp = plobject.data['temp'][time_slice,lev,:,:]
+#    zm_temp = np.mean(air_temp, axis=-1)
+#    eddy_temp = air_temp - zm_temp[:,np.newaxis]
     div = plobject.data['div'][time_slice,lev,:,:]
     rel_vort = plobject.data['zeta'][time_slice,lev,:,:]
     zm_zeta = np.mean(rel_vort, axis=-1)
@@ -212,8 +214,6 @@ def contour_comparison(plobject, lev=30, time_slice=-1):
 
     fig.suptitle(f'Southern polar vortex, {np.round(plobject.plevs[lev]*0.01,0)} mbar', size=18, y=0.9)
     plt.show()
-        
-
 
     
 # %%
@@ -270,4 +270,61 @@ def zonal_temp(plobject, meaning=True, time_slice=-1, hmin=25, hmax=49,
     else:
         plt.show()
 
-:
+# %%
+def alt_lon(plobject, key='eddy temp', time_slice=-1,
+            hmin=28, hmax=45, lat=85,
+            save=False, savename='alt_lon.png', saveformat='png'):
+
+    """ Create altitude-longitude plot of the cube identified
+    by the input key for the selected input time slice and
+    model level numbers."""
+
+    if key=='temp':
+        cube = plobject.data['temp'][time_slice,hmin:hmax,lat,:]
+        cols = 'Reds'  
+        levels = np.linspace(235,245,10)
+        cunit = 'K'   
+    elif key=='eddy temp':
+        air_temp = plobject.data['temp'][time_slice,hmin:hmax,lat,:]
+        zm_temp = np.mean(air_temp, axis=-1)
+        cube = air_temp - zm_temp[:,np.newaxis]
+        cols = 'Reds'
+        levels = np.linspace(-8,8,8)
+        cunit = 'K'
+    elif key=='div':       
+        cube = plobject.data['div'][time_slice,hmin:hmax,lat,:]*1e6
+        cols = 'seismic'
+        levels = np.linspace(-240,240,20)
+        cunit = '$10^{-6}$ s-1'
+    elif key=='eddy zeta':
+        rel_vort = plobject.data['zeta'][time_slice,hmin:hmax,lat,:]
+        zm_zeta = np.mean(rel_vort, axis=-1)
+        cube = (rel_vort - zm_zeta[:,np.newaxis])*1e6
+        cols = 'coolwarm'
+        levels = np.linspace(-240,240,20)
+        cunit = '$10^{-6}$ s-1'
+    else:
+        print('Key argument is not valid. Possible keys \
+              are temp, eddy temp, div, eddy zeta.')
+        
+    fig, ax = plt.subplots(figsize=(6,6))
+    plt.contourf(plobject.lons, plobject.plevs[hmin:hmax]*0.01, 
+                 cube, 
+                 levels=levels,
+                 cmap=cols)
+    plt.title(f'{key}, lat={plobject.lats[lat]}')
+    plt.xlabel('Longitude [deg]')
+    plt.ylabel('Pressure [mbar]')
+    ax.set_yscale('log')
+    plt.gca().invert_yaxis()
+    cbar = plt.colorbar()
+    cbar.set_label(f'{cunit}')
+    if save==True:
+        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
+
+
+
+# %%
