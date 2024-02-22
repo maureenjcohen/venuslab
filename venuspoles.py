@@ -28,26 +28,27 @@ def pvsnap(plobject, lev=40, time_slice=-1):
 
     theta_grad = np.gradient(theta, axis=0)
    
-    pvcube = (plobject.data['eta'][time_slice,lev,:,:]*theta_grad[lev,:,:])/plobject.rhoconst
+#    pvcube = (plobject.data['eta'][time_slice,lev,:,:]*theta_grad[lev,:,:])/plobject.rhoconst
+    pvcube = -plobject.data['zeta'][time_slice,lev,:,:]*theta_grad[lev,:,:]*plobject.g
 
     lon = np.linspace(-180, 180, len(plobject.lons))
     lat = np.linspace(-90, 90, len(plobject.lats))
     # Make a lon-lat grid based on the number of lon/lat columns (model resolution)
 
-    ortho = ccrs.Orthographic(central_longitude=0, central_latitude=0)
+    ortho = ccrs.Orthographic(central_longitude=0, central_latitude=-90)
     # Specify orthographic projection centered at lon/lat for north pole
     fig = plt.figure(figsize=(8, 6))
     fig.patch.set_facecolor('black') # Background colour
     ax = plt.axes(projection=ortho)
     ax.set_global()
     ax.gridlines()
-#    ax.set_extent([-180, 180, -90, -60], crs=ccrs.PlateCarree())
-#    add_circle_boundary(ax)
+    ax.set_extent([-180, 180, -90, -60], crs=ccrs.PlateCarree())
+    add_circle_boundary(ax)
  
-    levels=np.linspace(-0.0003,0.0003,30)
+    levels=np.linspace(-0.06,0.06,12)
     plimg = ax.contourf(lon, lat, pvcube, transform=ccrs.PlateCarree(), 
 #                        levels=levels,
-                        cmap='RdBu', norm=TwoSlopeNorm(0))
+                        cmap='RdBu_r', norm=TwoSlopeNorm(0))
     ax.set_title(f'Potential vorticity, h={plobject.heights[lev]} km', 
                  color='white',
                  y=1.05, fontsize=14)
@@ -188,7 +189,7 @@ def contour_comparison(plobject, lev=30, time_slice=-1):
                            subplot_kw={'projection': ccrs.Orthographic(0,-90)},
                            figsize=(12,6))
     
-    im_temp = ax[0].imshow(air_temp, cmap='Reds', vmin=235, vmax=245,
+    im_temp = ax[0].imshow(air_temp, cmap='Reds',
                       transform=ccrs.PlateCarree())    
     ax[0].set_title('Air temperature [K]', size=14)
     ax[0].gridlines()
@@ -294,7 +295,7 @@ def alt_lon(plobject, key='eddy temp', time_slice=-1,
     elif key=='div':       
         cube = plobject.data['div'][time_slice,hmin:hmax,lat,:]*1e6
         cols = 'seismic'
-        levels = np.linspace(-240,240,20)
+        levels = np.linspace(-1000,1000,20)
         cunit = '$10^{-6}$ s-1'
     elif key=='eddy zeta':
         rel_vort = plobject.data['zeta'][time_slice,hmin:hmax,lat,:]
@@ -303,6 +304,13 @@ def alt_lon(plobject, key='eddy temp', time_slice=-1,
         cols = 'coolwarm'
         levels = np.linspace(-240,240,20)
         cunit = '$10^{-6}$ s-1'
+    elif key=='eddy wind':
+        zonal_wind = plobject.data['vitu'][time_slice,hmin:hmax,lat,:]
+        zm_wind = np.mean(zonal_wind, axis=-1)
+        cube = zonal_wind - zm_wind[:,np.newaxis]
+        cols = 'coolwarm'
+        levels = np.linspace(-80,80,20)
+        cunit = 'm/s'
     else:
         print('Key argument is not valid. Possible keys \
               are temp, eddy temp, div, eddy zeta.')
@@ -314,6 +322,80 @@ def alt_lon(plobject, key='eddy temp', time_slice=-1,
                  cmap=cols)
     plt.title(f'{key}, lat={plobject.lats[lat]}')
     plt.xlabel('Longitude [deg]')
+    plt.ylabel('Pressure [mbar]')
+    ax.set_yscale('log')
+    plt.gca().invert_yaxis()
+    cbar = plt.colorbar()
+    cbar.set_label(f'{cunit}')
+    if save==True:
+        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
+
+# %%
+def hovmoeller(plobject, key='eddy temp', trange=(400,500),
+               hmin=28, hmax=45, lat=88, lon=90,
+               save=False, savename='hovmoeller.png', saveformat='png'):
+
+    """ Hovmoeller plot of the input key field variable for
+    the time and height ranges specified."""
+
+    if key=='temp':
+        cube = plobject.data['temp'][trange[0]:trange[1],hmin:hmax,lat,lon]
+        cols = 'Reds'  
+        levels = np.linspace(235,245,10)
+        cunit = 'K'   
+    elif key=='eddy temp':
+        air_temp = plobject.data['temp'][trange[0]:trange[1],hmin:hmax,lat,:]
+        zm_temp = np.mean(air_temp, axis=-1)
+        cube = air_temp - zm_temp[:,:,np.newaxis]
+        cube = cube[:,:,lon]
+        cols = 'coolwarm'
+        levels = np.linspace(-8,8,8)
+        cunit = 'K'
+    elif key=='temp anomaly':
+        air_temp = plobject.data['temp'][trange[0]:trange[1],hmin:hmax,lat,:]
+        zm_temp = np.mean(air_temp, axis=0)
+        cube = air_temp - zm_temp[np.newaxis,:,:]
+        cube = cube[:,:,lon]
+        cols = 'coolwarm'
+        levels = np.linspace(-8,8,10)
+        cunit = 'K'
+    elif key=='div':       
+        cube = plobject.data['div'][trange[0]:trange[1],hmin:hmax,lat,lon]*1e6
+        cols = 'seismic'
+        levels = np.linspace(-1000,1000,20)
+        cunit = '$10^{-6}$ s-1'
+    elif key=='eddy zeta':
+        rel_vort = plobject.data['zeta'][trange[0]:trange[1],hmin:hmax,lat,:]
+        zm_zeta = np.mean(rel_vort, axis=-1)
+        cube = (rel_vort - zm_zeta[:,:,np.newaxis])*1e6
+        cube = cube[:,:,lon]
+        cols = 'coolwarm'
+        levels = np.linspace(-240,240,20)
+        cunit = '$10^{-6}$ s-1'
+    elif key=='eddy wind':
+        zonal_wind = plobject.data['vitu'][trange[0]:trange[1],hmin:hmax,lat,:]
+        zm_wind = np.mean(zonal_wind, axis=-1)
+        cube = zonal_wind - zm_wind[:,:,np.newaxis]
+        cube = cube[:,:,lon]
+        cols = 'coolwarm'
+        levels = np.linspace(-80,80,20)
+        cunit = 'm/s'
+    else:
+        print('Key argument is not valid. Possible keys \
+              are temp, eddy temp, div, eddy zeta.')
+        
+    time_axis = np.arange(0,len(plobject.data['time_counter'][trange[0]:trange[1]]))   
+    fig, ax = plt.subplots(figsize=(6,6))
+    plt.contourf(time_axis, plobject.plevs[hmin:hmax]*0.01, 
+                 cube.T, 
+ #                levels=levels,
+                 norm=TwoSlopeNorm(0),
+                 cmap=cols)
+    plt.title(f'{key}, lat={plobject.lats[lat]}, lon={plobject.lons[lon]}')
+    plt.xlabel('Time')
     plt.ylabel('Pressure [mbar]')
     ax.set_yscale('log')
     plt.gca().invert_yaxis()
