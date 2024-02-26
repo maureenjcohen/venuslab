@@ -67,7 +67,7 @@ def tracerline(plobject, coords=(-0., -0.), sourcelev=22, line_lev=30, trange=(4
 
 
 # %%
-def zmage(plobject, hmin=0, hmax=20, time_slice=-1, convert2yr=True,
+def zmage(plobject, hmin=0, hmax=20, time_slice=-2, convert2yr=True,
           cmin=11.64, cmax=11.91,
          save=False, saveformat='png', savename='zmage.png'):
 

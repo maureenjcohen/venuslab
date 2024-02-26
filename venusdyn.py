@@ -301,7 +301,7 @@ def vprofile(plobject, key, coords, ptitle, xlab, unit,
     plt.title(f'Vertical profile of {ptitle}')
     plt.xlabel(f'{xlab} [{unit}]')
     plt.ylabel('Height [km]')
-    plt.xlim((0,15))
+    plt.xlim((25,30))
     plt.yticks(ticks=plobject.heights)
     plt.grid()
     plt.legend()
