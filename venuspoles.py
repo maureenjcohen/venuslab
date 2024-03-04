@@ -1,13 +1,15 @@
 # %%
 import numpy as np
+import numpy.ma as ma
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
 import cartopy.crs as ccrs
-import cartopy
 import matplotlib.path as mpath
 from PIL import Image
 import io
 
+
+## Utils
 # %%
 def add_circle_boundary(ax):
     # Compute a circle in axes coordinates, which we can use as a boundary
@@ -20,15 +22,50 @@ def add_circle_boundary(ax):
     ax.set_boundary(circle, transform=ax.transAxes)
 
 # %%
+def add_cycl_point(data, coord=None, axis=-1):
+        
+    """ Ripped from cartopy but removing requirement for
+        data to be equally spaced"""
+
+    if coord is not None:
+        if coord.ndim != 1:
+            raise ValueError('The coordinate must be 1-dimensional.')
+        if len(coord) != data.shape[axis]:
+            raise ValueError(f'The length of the coordinate does not match '
+                             f'the size of the corresponding dimension of '
+                             f'the data array: len(coord) = {len(coord)}, '
+                             f'data.shape[{axis}] = {data.shape[axis]}.')
+        delta_coord = np.diff(coord)
+#        if not np.allclose(delta_coord, delta_coord[0]):
+#            raise ValueError('The coordinate must be equally spaced.')
+        new_coord = ma.concatenate((coord, coord[-1:] + delta_coord[0]))
+    slicer = [slice(None)] * data.ndim
+    try:
+        slicer[axis] = slice(0, 1)
+    except IndexError:
+        raise ValueError('The specified axis does not correspond to an '
+                         'array dimension.')
+    new_data = ma.concatenate((data, data[tuple(slicer)]), axis=axis)
+    if coord is None:
+        return_value = new_data
+    else:
+        return_value = new_data, new_coord
+    return return_value
+
+
+
+
+# %%
 def pvsnap(plobject, lev=40, time_slice=-1):
     """ Potential vorticity at north and south pole for one time output """
 
-    pfactor = ((100000/plobject.data['presnivs'][:])**(2/7))
+    k = 188/900
+    # Gas constant for CO2, divided by specific heat used in OASIS sim
+    # See Mendonca & Buchhave 2020 Table 2
+    pfactor = ((100000/plobject.data['presnivs'][:])**(k))
     theta = plobject.data['temp'][time_slice,:,:,:]*pfactor[:,np.newaxis,np.newaxis]
 
-    theta_grad = np.gradient(theta, axis=0)
-   
-#    pvcube = (plobject.data['eta'][time_slice,lev,:,:]*theta_grad[lev,:,:])/plobject.rhoconst
+    theta_grad = np.gradient(theta, axis=0)/np.gradient(plobject.plevs)[:,np.newaxis,np.newaxis]
     pvcube = -plobject.data['zeta'][time_slice,lev,:,:]*theta_grad[lev,:,:]*plobject.g
 
     lon = np.linspace(-180, 180, len(plobject.lons))
@@ -38,34 +75,37 @@ def pvsnap(plobject, lev=40, time_slice=-1):
     ortho = ccrs.Orthographic(central_longitude=0, central_latitude=-90)
     # Specify orthographic projection centered at lon/lat for north pole
     fig = plt.figure(figsize=(8, 6))
-    fig.patch.set_facecolor('black') # Background colour
+    fig.patch.set_facecolor('white') # Background colour
     ax = plt.axes(projection=ortho)
     ax.set_global()
     ax.gridlines()
     ax.set_extent([-180, 180, -90, -60], crs=ccrs.PlateCarree())
     add_circle_boundary(ax)
  
-    levels=np.linspace(-0.06,0.06,12)
-    plimg = ax.contourf(lon, lat, pvcube, transform=ccrs.PlateCarree(), 
-#                        levels=levels,
+    levels=np.linspace(-0.6,0.6,12)
+    print(np.max(pvcube[:2,:]), np.min(pvcube[:2,:]))
+    plimg = ax.contourf(lon, lat, pvcube, 
+                        transform=ccrs.PlateCarree(), 
+    #                    levels=levels,
                         cmap='RdBu_r', norm=TwoSlopeNorm(0))
     ax.set_title(f'Potential vorticity, h={plobject.heights[lev]} km', 
-                 color='white',
+                 color='black',
                  y=1.05, fontsize=14)
     cbar = fig.colorbar(plimg, orientation='vertical', extend='max')
-    cbar.set_label('PVU', color='white')
-    cbar.ax.yaxis.set_tick_params(color='white')
-    plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='white')
+    cbar.set_label('PVU', color='black')
+    cbar.ax.yaxis.set_tick_params(color='black')
+    plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='black')
     # Create the contourfill plot and colorbar
     plt.show()
 
 # %%
-def zetasnap(plobject, cmin, cmax, lev=28, time_slice=-1):
+def zetasnap(plobject, cmin=-28, cmax=5, lev=30, time_slice=-1,
+             animation=False):
     """ Relative vorticity at north and south pole for one time output """
    
     zetacube = plobject.data['zeta'][time_slice,lev,:,:]
-    lon = np.linspace(-180, 180, len(plobject.lons))
-    lat = np.linspace(-90, 90, len(plobject.lats))
+#    lon = np.linspace(-180, 180, len(plobject.lons))
+#    lat = np.linspace(-90, 90, len(plobject.lats))
     # Make a lon-lat grid based on the number of lon/lat columns (model resolution)
     plev = np.round(plobject.data['presnivs'][lev]*0.01) # Pressure in mb
 
@@ -80,7 +120,8 @@ def zetasnap(plobject, cmin, cmax, lev=28, time_slice=-1):
     add_circle_boundary(ax)
     # Create the figure
     levels=np.linspace(cmin,cmax,20)
-    plimg = ax.contourf(lon, lat, zetacube*1e05, transform=ccrs.PlateCarree(), 
+    plimg = ax.contourf(plobject.lons, plobject.lats, zetacube*1e05, 
+                        transform=ccrs.PlateCarree(), 
                         levels=levels,
                         cmap='coolwarm', norm=TwoSlopeNorm(0))
     ax.set_title(f'Relative vorticity, h={plev} mb', 
@@ -92,17 +133,168 @@ def zetasnap(plobject, cmin, cmax, lev=28, time_slice=-1):
     plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='white')
     # Create the contourfill plot and colorbar
 
-    # The code block below creates a buffer and saves the plot to it.
-    # This avoids having to actually save the plot to the hard drive.
-    # We then reopen the 'saved' figure as a PIL Image object and output it.
-    buf = io.BytesIO()
-    fig.savefig(buf, bbox_inches='tight')
-    buf.seek(0)
-    img = Image.open(buf)
-    img.show()
-    buf.close()
+    if animation==True:
+        # The code block below creates a buffer and saves the plot to it.
+        # This avoids having to actually save the plot to the hard drive.
+        # We then reopen the 'saved' figure as a PIL Image object and output it.
+        buf = io.BytesIO()
+        fig.savefig(buf, bbox_inches='tight')
+        buf.seek(0)
+        img = Image.open(buf)
+        img.show()
+        buf.close()
 
-    return img
+        return img
+    else:
+        plt.show()
+
+# %%
+def calc_zeta(plobject, lev, time_slice):
+
+    """ Calculate relative vorticity"""
+
+    v = plobject.data['vitv'][time_slice,lev,:,:]
+    u = plobject.data['vitu'][time_slice,lev,:,:]
+    
+    xlon, ylat = np.meshgrid(plobject.lons, plobject.lats)
+    dlat = np.deg2rad(np.abs(np.gradient(ylat, axis=0)))
+    dlon = np.deg2rad(np.abs(np.gradient(xlon, axis=1)))
+    rad = plobject.radius*1e3
+    dy = dlat*rad
+    dx = dlon*rad*(np.cos(np.deg2rad(ylat)))
+
+    dvdx = np.gradient(v, axis=-1)/dx
+    dudy = np.gradient(u, axis=-2)/dy
+
+    zeta = dvdx - dudy
+
+    return zeta
+
+ # %%
+def calc_dtau(plobject, lev, time_slice):
+
+    """ Calculate vertical gradient of theta x gravity      
+        This is for direct comparision with Garate-Lopez et al. 2016 """
+    
+    k = 188/900
+    # Gas constant for CO2, divided by specific heat used in OASIS sim
+    # See Mendonca & Buchhave 2020 Table 2
+    pfactor = ((100000/plobject.data['presnivs'][:])**(k))
+    theta = plobject.data['temp'][time_slice,:,:,:]*pfactor[:,np.newaxis,np.newaxis]
+
+    dtheta_dp = np.gradient(theta, axis=0)/np.gradient(plobject.plevs)[:,np.newaxis,np.newaxis]
+    dtau = -dtheta_dp[lev,:,:]*plobject.g
+
+    return dtau
+
+# %%
+def calc_pv(plobject, lev, time_slice):
+
+    """ Calculate Ertel's potential vorticity approximated
+    as in Garate-Lopez et al. 2016              """
+
+    zeta = calc_zeta(plobject=plobject, lev=lev, time_slice=time_slice)
+    dtau = calc_dtau(plobject=plobject, lev=lev, time_slice=time_slice)
+
+    pvcube = zeta*dtau
+
+    return pvcube
+
+# %%
+def polarsnap(plobject, key, lev, time_slice=-1,
+               animation=False):
+    
+    """ Display snapshot of desired quantity centred on south pole
+        in orthographic projection"""
+    
+    cubedict = {'zeta': {'levels': np.linspace(-12,12,20),
+                         'title': 'Relative vorticity',
+                         'unit': '10$^{-5}$ s-1',
+                         'cmap': 'coolwarm'},
+                'dtau': {'levels': np.linspace(0, 3.8, 20),
+                         'title': '-g dtheta/dp',
+                         'unit': '10$^{-2}$ K kg-1 m-2',
+                         'cmap': 'coolwarm'},
+                'pv':   {'levels': np.linspace(-1.6, 4.8, 20),
+                         'title': 'Ertel potential vorticity',
+                         'unit': 'PVU',
+                         'cmap': 'coolwarm'},
+                'v':    {'levels': np.linspace(-30,38,40),
+                         'title': 'Meridional wind',
+                         'unit': 'm/s',
+                         'cmap': 'RdBu_r'},
+                'u':    {'levels': np.linspace(-100,0,40),
+                         'title': 'Zonal wind',
+                         'unit': 'm/s',
+                         'cmap': 'RdBu'},
+                'temp': {'levels': np.linspace(230,245,40),
+                         'title': 'Air temperature',
+                         'unit': 'K',
+                         'cmap': 'hot'},
+                'geop': {'levels': np.linspace(55000,65000,100),
+                         'title': 'Geopotential height',
+                         'unit': 'm',
+                         'cmap': 'hot'}}
+    
+    if key=='zeta':
+        cube = calc_zeta(plobject=plobject, lev=lev, time_slice=time_slice)
+#        cube = plobject.data['zeta'][time_slice,lev,:,:]
+        cube = cube*1e5
+    elif key=='dtau':
+        cube = calc_dtau(plobject=plobject, lev=lev, time_slice=time_slice)
+        cube = cube*1e2
+    elif key=='pv':
+        cube = calc_pv(plobject=plobject, lev=lev, time_slice=time_slice)
+    elif key=='v':
+        cube = plobject.data['vitv'][time_slice,lev,:,:]
+    elif key=='u':
+        cube = plobject.data['vitu'][time_slice,lev,:,:]
+    elif key=='temp':
+        cube = plobject.data['temp'][time_slice,lev,:,:]
+    elif key=='geop':
+        cube = plobject.data['geop'][time_slice,lev,:,:]
+    
+    proj = ccrs.Orthographic(central_longitude=0, central_latitude=-90)
+    # Specify projection 
+    fig = plt.figure(figsize=(8, 6))
+    fig.patch.set_facecolor('black') # Background colour
+    ax = plt.axes(projection=proj)
+    ax.set_global()
+    ax.gridlines()
+    ax.set_extent([0, 360, -90, -60], crs=ccrs.PlateCarree())
+    add_circle_boundary(ax)
+    # Create the figure
+    cube, clon = add_cycl_point(cube, plobject.lons, -1)
+ 
+    plimg = ax.contourf(clon, plobject.lats, cube, 
+                        transform=ccrs.PlateCarree(), 
+#                        levels=cubedict[key]['levels'],
+                        cmap=cubedict[key]['cmap'], 
+#                        norm=TwoSlopeNorm(0)
+                        )
+    ax.set_title(cubedict[key]['title'] + 
+                 f', {np.round(plobject.plevs[lev]*0.01,0)} mbar', 
+                 color='white',
+                 y=1.05, fontsize=14)
+    cbar = fig.colorbar(plimg, orientation='vertical', extend='max')
+    cbar.set_label(cubedict[key]['unit'], color='white')
+    cbar.ax.yaxis.set_tick_params(color='white')
+    plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='white')
+    # Create the contourfill plot and colorbar
+
+    if animation==True:
+        # The code block below creates a buffer and saves the plot to it.
+        # This avoids having to actually save the plot to the hard drive.
+        # We then reopen the 'saved' figure as a PIL Image object and output it.
+        buf = io.BytesIO()
+        fig.savefig(buf, bbox_inches='tight')
+        buf.seek(0)
+        img = Image.open(buf)
+        img.show()
+        buf.close()
+        return img
+    else:
+        plt.show()
 
 # %%
 def vortex_vectors(plobject, key='zeta', levs=[25,30,35], time_slice=-1, n=2, qscale=500):
@@ -218,19 +410,16 @@ def contour_comparison(plobject, lev=30, time_slice=-1):
 
     
 # %%
-def animate_poles(plobject, lev, trange,
-                  cmin, cmax,
+def animate_poles(plobject, key, lev, trange,
                   savename='zeta_southpole.gif'):
     
-    """ Function for animating the above plots,
-    just insert whichever of the plotting
-    functions above you want """
+    """ Function for animating the polarsnap plots """
     
     im = []
     for t in range(trange[0], trange[1], trange[2]):
-        frame_shot = zetasnap(plobject, lev=lev, time_slice=t,
-                              cmin=cmin, cmax=cmax)
-    # zetasnap, pvsnap, vortex_vectors, etc. goes above
+        frame_shot = polarsnap(plobject, key=key, lev=lev, time_slice=t,
+                               animation=True)
+    # keys from polarsnap function
         im.append(frame_shot)
     # Create PIL Image of each generated plot and append to list
 
@@ -239,30 +428,38 @@ def animate_poles(plobject, lev, trange,
     # Save our list of frames as a gif
 
 # %%
-def zonal_plot(plobject, meaning=True, time_slice=-1, hmin=25, hmax=49,
-               save=False, savename='zm_temp.png', saveformat='png'):
+def zonal_plot(plobject, key, meaning=True, time_slice=-1, hmin=25, hmax=49,
+               latmin=0, latmax=45,
+               save=False, savename='zm_pole.png', saveformat='png'):
     
     """ Plot zonal mean temperature or geopotential height """
 
-    if meaning==True:
-        air_temp = np.mean(plobject.data['temp'][:,hmin:hmax,:,:], axis=0)
-    else:
-        air_temp = plobject.data['temp'][time_slice,hmin:hmax,:,:]
+    cube = plobject.data[key][:,hmin:hmax,latmin:latmax,:]
+    cubedict = {'temp': { 'title': 'Air temperature (zonal mean)', 
+                          'levels': np.arange(160,320,4),
+                          'unit': 'K'},
+                'geop' : {'title': 'Geopotential height (zonal mean)',
+                          'levels': np.arange(50000,90000,500),
+                          'unit': 'm'}}
 
-    zonal_temp = np.mean(air_temp, axis=-1)
-    levels=np.arange(160,440,4)
+    if meaning==True:
+        tcube = np.mean(cube, axis=0)
+    else:
+        tcube = cube[time_slice,:,:]
+
+    zcube= np.mean(tcube, axis=-1)
     fig, ax = plt.subplots(figsize=(6,6))
-    plt.contourf(plobject.lats, plobject.plevs[hmin:hmax]*0.01, 
-                 zonal_temp, 
-                 levels=levels,
+    plt.contourf(plobject.lats[latmin:latmax], plobject.plevs[hmin:hmax]*0.01, 
+                 zcube, 
+#                 levels=cubedict[key]['levels'],
                  cmap='hot')
-    plt.title('Air temperature (zonal mean)')
+    plt.title(cubedict[key]['title'])
     plt.xlabel('Latitude [deg]')
     plt.ylabel('Pressure [mbar]')
     ax.set_yscale('log')
     plt.gca().invert_yaxis()
     cbar = plt.colorbar()
-    cbar.set_label('K')
+    cbar.set_label(cubedict[key]['unit'])
     if save==True:
         plt.savefig(savename, format=saveformat, bbox_inches='tight')
         plt.close()
