@@ -238,13 +238,11 @@ def animate_poles(plobject, lev, trange,
                duration=0.5, loop=0)
     # Save our list of frames as a gif
 
-
-
 # %%
-def zonal_temp(plobject, meaning=True, time_slice=-1, hmin=25, hmax=49,
+def zonal_plot(plobject, meaning=True, time_slice=-1, hmin=25, hmax=49,
                save=False, savename='zm_temp.png', saveformat='png'):
     
-    """ Plot zonal mean temperature """
+    """ Plot zonal mean temperature or geopotential height """
 
     if meaning==True:
         air_temp = np.mean(plobject.data['temp'][:,hmin:hmax,:,:], axis=0)
