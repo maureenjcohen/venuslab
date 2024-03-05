@@ -271,7 +271,7 @@ def vprofile(plobject, key, coords, ptitle, xlab, unit,
              hmin, hmax,
              zmean=False, meaning=False, time_slice=-1, 
              convert2yr=True,
-             save=False, saveformat='png', savename='lonlatslice.png'):
+             save=False, saveformat='png', savename='vert_prof.png'):
 
     """ Plot vertical profiles at selected locations
         Can specify time mean and/or zonal mean
@@ -290,7 +290,15 @@ def vprofile(plobject, key, coords, ptitle, xlab, unit,
         cube = cube/(60*60*24*360)
         unit = 'years'
     elif key=='age' and convert2yr==False:
-        unit = 'seconds' 
+        unit = 'seconds'
+    elif key=='vitw':
+        if meaning==True:
+            temp = np.mean(plobject.data['temp'], axis=0)
+            pres = np.mean(plobject.data['pres'], axis=0)
+        else:
+            temp = plobject.data['temp'][time_slice,:,:,:]
+            pres = plobject.data['pres'][time_slice,:,:,:]
+        cube = -(cube*temp*plobject.RCO2)/(pres*plobject.g)
 
     fig, ax = plt.subplots(figsize=(6,8))
 
@@ -301,8 +309,8 @@ def vprofile(plobject, key, coords, ptitle, xlab, unit,
     plt.title(f'Vertical profile of {ptitle}')
     plt.xlabel(f'{xlab} [{unit}]')
     plt.ylabel('Height [km]')
-    plt.xlim((25,30))
-    plt.yticks(ticks=plobject.heights)
+#    plt.xlim((0,30))
+#    plt.yticks(ticks=plobject.heights)
     plt.grid()
     plt.legend()
     if save==True:

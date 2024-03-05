@@ -79,7 +79,8 @@ def heating_rates(plobject, tmean=True, time_slice=-1,
     plt.show()
 
 # %%
-def static_stability(plobject, meaning=True, time_slice=-1):
+def static_stability(plobject, coords=[(0,48), (48,48), (95,48)],
+                     hmin=0, hmax=-10, time_mean=True, time_slice=-1):
     
     """ Plot vertical profile of static stability"""
     if not hasattr(plobject, 'rho'):
@@ -87,22 +88,32 @@ def static_stability(plobject, meaning=True, time_slice=-1):
     # Check if Planet object already has potential
     # temperature cube
     
-    if meaning==True:
+    if time_mean==True:
         temp = np.mean(plobject.data['temp'][:], axis=0)
     else:
         temp = plobject.data['temp'][time_slice,:,:,:]
     # Get rid of time axis through meaning or selection
 
-    temp_mean = np.sum(temp*plobject.data['aire'][:], axis=(1,2))/plobject.area
+    ## First get global area-weighted mean profile
+    global_prof = np.sum(temp*plobject.data['aire'][:], axis=(1,2))/plobject.area
     # Calculate area weighted means on each model level
-    dtdz = np.gradient(temp_mean)/np.gradient(np.array(plobject.heights))
+    dtdz = np.gradient(global_prof)/np.gradient(np.array(plobject.heights))
     # Temperature lapse rate, dT/dz
-    stab = (dtdz - (-8.87))
+    global_stab = (dtdz - (-8.87))
     # Stability parameter: temperature lapse rate minus 
-    # dry adiabatic lapse rate
+    # dry adiabatic lapse rate for Venus
+
+    ## Now get profiles at individual gridboxes
+    gridbox_dtdz = np.gradient(temp)/np.gradient(np.array(plobject.heights))
+    gridbox_stab = (gridbox_dtdz - (-8.87))
+
     fig, ax = plt.subplots(figsize=(6,4))
-    plt.plot(stab[:-10], plobject.heights[:-10], color='k')
-    plt.plot(np.zeros(40), plobject.heights[:-10], color='k', linestyle='--')
+    for coord in coords:
+        lat_lab, lon_lab = plobject.lats[coord[0]], plobject.lons[coord[1]]
+        plt.plot(gridbox_stab[hmin:hmax,coord[0],coord[1]], plobject.heights[hmin:hmax], 
+                 label=f'{lat_lab}$^\circ$ lat, {lon_lab}$^\circ$ lon')
+    plt.plot(global_stab[hmin:hmax], plobject.heights[hmin:hmax], color='k')
+    plt.plot(np.zeros(40), plobject.heights[hmin:hmax], color='k', linestyle='--')
     plt.title('Static stability of the atmosphere')
     plt.ylabel('Height [km]')
     plt.xlabel('Static stability [K/km]')

@@ -234,7 +234,11 @@ def polarsnap(plobject, key, lev, time_slice=-1,
                 'geop': {'levels': np.linspace(55000,65000,100),
                          'title': 'Geopotential height',
                          'unit': 'm',
-                         'cmap': 'hot'}}
+                         'cmap': 'hot'},
+                'age': {'levels': np.linspace(0,30,1),
+                        'title': 'Age of air',
+                        'unit': 'years',
+                        'cmap': 'cividis'}}
     
     if key=='zeta':
         cube = calc_zeta(plobject=plobject, lev=lev, time_slice=time_slice)
@@ -253,6 +257,9 @@ def polarsnap(plobject, key, lev, time_slice=-1,
         cube = plobject.data['temp'][time_slice,lev,:,:]
     elif key=='geop':
         cube = plobject.data['geop'][time_slice,lev,:,:]
+    elif key=='age':
+        cube = plobject.data['age'][time_slice,lev,:,:]
+        cube = cube/(60*60*24*360)
     
     proj = ccrs.Orthographic(central_longitude=0, central_latitude=-90)
     # Specify projection 
@@ -478,7 +485,7 @@ def alt_lon(plobject, key='eddy temp', time_slice=-1,
     if key=='temp':
         cube = plobject.data['temp'][time_slice,hmin:hmax,lat,:]
         cols = 'Reds'  
-        levels = np.linspace(235,245,10)
+        levels = np.linspace(200,240,40)
         cunit = 'K'   
     elif key=='eddy temp':
         air_temp = plobject.data['temp'][time_slice,hmin:hmax,lat,:]
@@ -587,7 +594,7 @@ def hovmoeller(plobject, key='eddy temp', trange=(400,500),
     plt.contourf(time_axis, plobject.plevs[hmin:hmax]*0.01, 
                  cube.T, 
  #                levels=levels,
-                 norm=TwoSlopeNorm(0),
+#                 norm=TwoSlopeNorm(0),
                  cmap=cols)
     plt.title(f'{key}, lat={plobject.lats[lat]}, lon={plobject.lons[lon]}')
     plt.xlabel('Time')

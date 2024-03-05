@@ -138,7 +138,7 @@ def animate_lonlat(inputarray, lons, lats, heights, lev, trange=(0,4499,50),
 
 # %%
 def zm_frame(inputarray, lats, hmin, hmax, heights, time_slice, 
-                 inputcols, ptitle, cunit, cmin, cmax):
+                 inputcols, ptitle, cunit, cmin, cmax, animation=True):
     
     zm = np.mean(inputarray[time_slice,:,:,:], axis=-1) 
     levels = np.linspace(cmin, cmax, 30)
@@ -151,18 +151,20 @@ def zm_frame(inputarray, lats, hmin, hmax, heights, time_slice,
     plt.ylabel('Height [km]')
     cbar = plt.colorbar()
     cbar.set_label(f'{cunit}')
+    if animation==True:
+        # The code block below creates a buffer and saves the plot to it.
+        # This avoids having to actually save the plot to the hard drive.
+        # We then reopen the 'saved' figure as a PIL Image object and output it.
+        buf = io.BytesIO()
+        fig.savefig(buf, bbox_inches='tight')
+        buf.seek(0)
+        img = Image.open(buf)
+        img.show()
+        buf.close()
 
-    # The code block below creates a buffer and saves the plot to it.
-    # This avoids having to actually save the plot to the hard drive.
-    # We then reopen the 'saved' figure as a PIL Image object and output it.
-    buf = io.BytesIO()
-    fig.savefig(buf, bbox_inches='tight')
-    buf.seek(0)
-    img = Image.open(buf)
-    img.show()
-    buf.close()
-
-    return img
+        return img
+    else:
+        plt.show()
 
 # %%
 def animate_zm(inputarray, lats, hmin, hmax, heights, cmin, cmax, trange=(0,4499,50), 
@@ -177,6 +179,6 @@ def animate_zm(inputarray, lats, hmin, hmax, heights, cmin, cmax, trange=(0,4499
         im.append(frame_shot)
 
     im[0].save(savename, save_all=True, append_images=im[1:], optimize=False,
-            duration=500, loop=1)
+            duration=0.5, loop=0)
 
 # %%
