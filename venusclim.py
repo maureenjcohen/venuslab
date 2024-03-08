@@ -79,8 +79,9 @@ def heating_rates(plobject, tmean=True, time_slice=-1,
     plt.show()
 
 # %%
-def static_stability(plobject, coords=[(0,48), (48,48), (95,48)],
-                     hmin=0, hmax=-10, time_mean=True, time_slice=-1):
+def static_stability(plobject, coords=[(0,48), (48,48), (96,48)],
+                     hmin=0, hmax=-10, time_mean=True, time_slice=-1,
+                     save=False, savename='static_stab.png', saveformat='png'):
     
     """ Plot vertical profile of static stability"""
     if not hasattr(plobject, 'rho'):
@@ -104,19 +105,28 @@ def static_stability(plobject, coords=[(0,48), (48,48), (95,48)],
     # dry adiabatic lapse rate for Venus
 
     ## Now get profiles at individual gridboxes
-    gridbox_dtdz = np.gradient(temp)/np.gradient(np.array(plobject.heights))
+    height_grad = np.gradient(np.array(plobject.heights))
+    gridbox_dtdz = np.gradient(temp, axis=0)/height_grad[:,np.newaxis,np.newaxis]
     gridbox_stab = (gridbox_dtdz - (-8.87))
-
-    fig, ax = plt.subplots(figsize=(6,4))
+ 
+    fig, ax = plt.subplots(figsize=(6,8))
     for coord in coords:
         lat_lab, lon_lab = plobject.lats[coord[0]], plobject.lons[coord[1]]
         plt.plot(gridbox_stab[hmin:hmax,coord[0],coord[1]], plobject.heights[hmin:hmax], 
                  label=f'{lat_lab}$^\circ$ lat, {lon_lab}$^\circ$ lon')
-    plt.plot(global_stab[hmin:hmax], plobject.heights[hmin:hmax], color='k')
+    plt.plot(global_stab[hmin:hmax], plobject.heights[hmin:hmax], color='k', 
+             label='Global mean')
     plt.plot(np.zeros(40), plobject.heights[hmin:hmax], color='k', linestyle='--')
     plt.title('Static stability of the atmosphere')
     plt.ylabel('Height [km]')
     plt.xlabel('Static stability [K/km]')
-#    plt.xlim((-2,10))
-    plt.show()
+#    plt.xlim((0,30))
+#    plt.yticks(ticks=plobject.heights)
+    plt.grid()
+    plt.legend()
+    if save==True:
+        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
 # %%
