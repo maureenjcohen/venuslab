@@ -100,7 +100,8 @@ def lonlat_frame(inputarray, lons, lats, heights, lev, time_slice,
 
     levels = np.linspace(cmin, cmax, 100)
     fig = plt.figure(figsize=(8, 6))
-    plt.contourf(lons, lats, inputarray[time_slice,lev,:,:], levels=levels,
+    plt.contourf(lons, lats, inputarray[time_slice,lev,:,:], 
+ #                levels=levels,
                  cmap=inputcols, extend='max')
     plt.title(f'{ptitle}, h={heights[lev]} km')
     plt.xlabel('Longitude [deg]')

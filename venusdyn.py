@@ -276,7 +276,9 @@ def vprofile(plobject, key, coords, ptitle, xlab, unit,
     """ Plot vertical profiles at selected locations
         Can specify time mean and/or zonal mean
         Coords must be a list of latxlon tuples
-        Assumes a 4-D cube                      """
+        Assumes a 4-D cube                      
+        
+        Equator versus polar waves: [(10,48),(48,48),(86,48)] """
 
     if meaning==True:
         cube = np.mean(plobject.data[key], axis=0)
@@ -301,10 +303,9 @@ def vprofile(plobject, key, coords, ptitle, xlab, unit,
         cube = -(cube*temp*plobject.RCO2)/(pres*plobject.g)
 
     fig, ax = plt.subplots(figsize=(6,8))
-
     for coord in coords:
         lat_lab, lon_lab = plobject.lats[coord[0]], plobject.lons[coord[1]]
-        plt.plot(cube[hmin:hmax,coord[0],coord[1]], plobject.heights[hmin:hmax], 
+        plt.plot(cube[hmin:hmax,coord[0],coord[1]], plobject.heights[hmin:hmax],
                  label=f'{lat_lab}$^\circ$ lat, {lon_lab}$^\circ$ lon')
     plt.title(f'Vertical profile of {ptitle}')
     plt.xlabel(f'{xlab} [{unit}]')
@@ -318,5 +319,53 @@ def vprofile(plobject, key, coords, ptitle, xlab, unit,
         plt.close()
     else:
         plt.show()
+
+# %%
+def time_series(plobject, key, coords, ptitle, ylab, unit,
+                trange,
+                save=False, saveformat='png', 
+                savename='timeseries.png'):
+    """ Plot time series of cube with the input key,
+        at the gridbox coordinates given in the coords
+        
+        Coords: list of three-digit coordinates (alt, lat, lon)
+        e.g. [(16,86,48),(22,86,48),(30,86,48)] """
+    
+    series_list = []
+    coords_list = []
+    for coord in coords:
+        cube = plobject.data[key][trange[0]:trange[1],coord[0],coord[1],coord[2]]
+        if key=='vitw':
+            temp = plobject.data['temp'][trange[0]:trange[1],coord[0],coord[1],coord[2]]
+            pres = plobject.data['pres'][trange[0]:trange[1],coord[0],coord[1],coord[2]]
+            cube = -(cube*temp*plobject.RCO2)/(pres*plobject.g)
+            series_list.append(cube)
+
+            alt_lab = plobject.heights[coord[0]] 
+            lat_lab = plobject.lats[coord[1]]
+            lon_lab = plobject.lons[coord[2]]
+            labs = np.array([alt_lab, lat_lab, lon_lab])
+            coords_list.append(labs)
+
+    fig, ax = plt.subplots(figsize=(8,6))
+
+    for ind, item in enumerate(series_list):
+        print('Plotting item ' + str(ind))
+        plt.plot(item,
+                 label=f'{coords_list[ind][1]}$^\circ$ lat, {coords_list[ind][2]}$^\circ$ lon, {coords_list[ind][0]} km')
+    plt.title(f'Time series of {ptitle}')
+    plt.xlabel('Time')
+    plt.ylabel(f'{ylab} [{unit}]')
+    plt.legend()
+    if save==True:
+        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
+
+
+
+    
+
 
 # %%
