@@ -18,13 +18,14 @@ def omega_profile(plobject, hrange=(0,-1), trange=(0,-1),
     circumf = (2*np.pi*(plobject.radius + plobject.heights[hrange[0]:hrange[1]])*1000)
     period = (circumf/np.abs(zmean))
     omega = (2*np.pi)/period
+    period_days = period/(60*60*24)
 
     if plot==True:
         fig, ax = plt.subplots(figsize=(6,8))
-        plt.plot(omega,plobject.heights[hrange[0]:hrange[1]])
-        plt.title('Rotation rate of atmosphere')
+        plt.plot(period_days,plobject.heights[hrange[0]:hrange[1]])
+        plt.title('Rotation period of atmosphere')
         plt.ylabel('Height [km]')
-        plt.xlabel('Rotation rate [rad/s]')
+        plt.xlabel('Period [Earth days]')
         plt.xscale('log')
         if save==True:
             plt.savefig(savename, format=saveformat, bbox_inches='tight')
@@ -126,7 +127,7 @@ def tropical(plobject, hrange=(0,-1), trange=(0,-1)):
     return trop_r
 
 # %%
-def plot_profiles(plobject, lat=86, hrange=(0,-1), trange=(0,-1),
+def plot_profiles(plobject, lat=64, hrange=(0,-1), trange=(0,-1),
                   save=False, 
                   saveformat='png', savename='radii_profiles.png'):
 
@@ -157,3 +158,5 @@ def plot_profiles(plobject, lat=86, hrange=(0,-1), trange=(0,-1),
     else:
         plt.show()
 
+
+# %%
