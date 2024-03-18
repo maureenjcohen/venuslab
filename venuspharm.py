@@ -34,8 +34,8 @@ def decomposition(plobject, meaning=True, time_slice=-1, level=35, qscale=1,
     eddy_vpsi = vpsi - zonal_vpsi.T
 
     X, Y = np.meshgrid(plobject.lons, plobject.lats)
-    fig1, ax1 = plt.subplots(figsize=(10,5))
-    q1 = ax1.quiver(X[::n,::n], Y[::n,::n], uchi[::n,::n], -vchi[::n,::n],
+    fig1, ax1 = plt.subplots(figsize=(8,5))
+    q1 = ax1.quiver(X[::n,::n], Y[::n,::n], uchi[::n,::n], vchi[::n,::n],
                   angles='xy', scale_units='xy', scale=qscale)
     ax1.quiverkey(q1, X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %(qscale*10), 
                   labelpos='E', coordinates='axes')
@@ -44,8 +44,8 @@ def decomposition(plobject, meaning=True, time_slice=-1, level=35, qscale=1,
     plt.ylabel('Latitude [deg]')
     plt.show()
 
-    fig2, ax2 = plt.subplots(figsize=(10,5))
-    q2 = ax2.quiver(X[::n,::n], Y[::n,::n], upsi[::n,::n], -vpsi[::n,::n],
+    fig2, ax2 = plt.subplots(figsize=(8,5))
+    q2 = ax2.quiver(X[::n,::n], Y[::n,::n], upsi[::n,::n], vpsi[::n,::n],
                   angles='xy', scale_units='xy', scale=(qscale*qmultiplier))
     ax2.quiverkey(q2, X=0.9, Y=1.05, U=(qscale*qmultiplier*10), 
                   label='%s m/s' %(qscale*qmultiplier*10), 
@@ -55,13 +55,24 @@ def decomposition(plobject, meaning=True, time_slice=-1, level=35, qscale=1,
     plt.ylabel('Latitude [deg]')
     plt.show()
 
-    fig3, ax3 = plt.subplots(figsize=(10,5))
-    q3 = ax3.quiver(X[::n,::n], Y[::n,::n], eddy_upsi[::n,::n], -eddy_vpsi[::n,::n],
+    fig3, ax3 = plt.subplots(figsize=(8,5))
+    q3 = ax3.quiver(X[::n,::n], Y[::n,::n], eddy_upsi[::n,::n], eddy_vpsi[::n,::n],
                   angles='xy', scale_units='xy', scale=(qscale*qmultiplier))
     ax3.quiverkey(q3, X=0.9, Y=1.05, U=(qscale*qmultiplier*10), 
                   label='%s m/s' %(qscale*qmultiplier*10), 
                   labelpos='E', coordinates='axes')
     plt.title(f'Eddy rotational component of wind, h={int(plobject.heights[level])} km')
+    plt.xlabel('Longitude [deg]')
+    plt.ylabel('Latitude [deg]')
+    plt.show()
+
+    fig4, ax4 = plt.subplots(figsize=(8,5))
+    q4 = ax4.quiver(X[::n,::n], Y[::n,::n], u[::n,::n], v[::n,::n],
+                  angles='xy', scale_units='xy', scale=(qscale*qmultiplier))
+    ax4.quiverkey(q4, X=0.9, Y=1.05, U=(qscale*qmultiplier*10), 
+                  label='%s m/s' %(qscale*qmultiplier*10), 
+                  labelpos='E', coordinates='axes')
+    plt.title(f'Wind vectors, h={int(plobject.heights[level])} km')
     plt.xlabel('Longitude [deg]')
     plt.ylabel('Latitude [deg]')
     plt.show()

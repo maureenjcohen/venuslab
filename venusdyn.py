@@ -147,8 +147,6 @@ def wind_vectors(plobject, meaning=True, time_slice=-1, n=2,
         u = u[time_slice,:,:]
         v = v[time_slice,:,:]
         w = w[time_slice,:,:]
-    print(w[15,7], u[15,7])
-    print(v[15,7])
 
 #    X, Y = np.meshgrid(np.arange(0,len(plobject.lons)), np.arange(0,len(plobject.lats)))
     X, Y = np.meshgrid(plobject.lons, plobject.lats)
