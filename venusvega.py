@@ -78,6 +78,46 @@ class Balloon:
         self.stats = stats_df
         # Create DF with mean U, V, W winds
 
+# %%
+class Descent:
+    """ Holds data from descent probes 
+        Currently handles: Vega 2 Lander    """
+    
+    def __init__(self, landerpath, name):
+        self.name = name # Name of experiment
+
+        data = pd.read_csv(landerpath, header=None, sep='\s+')
+        del data[data.columns[0]]
+
+        labels = {'Time': 's',
+                  'Pressure': 'bar',
+                  'Temperature': 'K',
+                  'Altitude': 'm'}
+        # Labels data taken from vg2lr.lbl
+
+        self.labels = labels # Store labels dictionary in object
+        cols = labels.keys() # Extract column labels to be used in header
+        data.columns = cols # Add column names to DataFrame
+        self.data = data # Add DataFrame to object
+
+        units = labels.values() # Extract units from labels
+        self.units = units # Add units to object
+
+    def profile(self, key):
+        if key=='Pressure':
+            cube = self.data['Pressure'].values
+        elif key=='Temperature':
+            cube = self.data['Temperature'].values
+        else:
+            print('Key not recognised. Choose Pressure or Temperature')
+
+        fig, ax = plt.subplots(figsize=(8,6))
+        plt.plot(cube, self.data['Altitude']*1e-3)
+        plt.title(f'{key} profile from {self.name}')
+        plt.xlabel(f'{key} [{self.labels[key]}]')
+        plt.ylabel('Altitude [km]')
+        plt.show()   
+
 
 # %%
 def compare_stats(plobject, bobject, lat, lev=25):
