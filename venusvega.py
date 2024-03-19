@@ -96,7 +96,7 @@ def compare_stats(plobject, bobject, lat, lev=25):
 
     omega = plobject.data['vitw'][:,lev,lat,:]
     temp = plobject.data['temp'][:,lev,lat,:]
-    pres = plobject.data['pres'][:,lev,lat,:]
+    pres = plobject.data['presnivs'][lev]
     w = -(omega*temp*plobject.RCO2)/(pres*plobject.g)
     sim_w = np.mean(w)
 
