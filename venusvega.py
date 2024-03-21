@@ -50,7 +50,7 @@ class Balloon:
         print('4 indicates high quality.')
 
     def coords(self):
-        """ Define coords of ballon as mean pressure level
+        """ Define coords of balloon as mean pressure level
             and mean latitude; longitude varies with drift """
         
         pmean = np.mean(self.data['Pressure'])
