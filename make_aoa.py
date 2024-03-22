@@ -23,7 +23,7 @@ saveas = 'png'
 from venusdata import *
 from venusaoa import *
 from venusrossby import *
-from venusdyn import psi_m, zmzw
+from venusdyn import psi_m, zmzw, wind_vectors
 from venuspoles import add_circle_boundary, add_cycl_point
 
 import numpy as np
@@ -252,6 +252,9 @@ if __name__ == "__main__":
     aoa_profiles(simulations, savearg=True, sformat=saveas)
     # Figure 4
     polar_aoa(simulations[0], savearg=True, sformat=saveas)
+    # Subplots for Figure 5
+    wind_vectors(simulations[0], meaning=False, time_slice=1850, lev=16,
+                 savearg=True, savename='wind_vectors_lev6_t1850.png', sformat=saveas)
 
 
 # %%

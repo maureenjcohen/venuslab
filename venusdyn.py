@@ -125,7 +125,9 @@ def u_series(plobject, time_range=(0,-1), meaning=True, lat=16, lon=24, lev=40,
 
 # %%
 def wind_vectors(plobject, meaning=True, time_slice=-1, n=2, 
-                 qscale=2, level=40, wtype='Vertical'):
+                 qscale=2, level=40, wtype='Vertical',
+                 savearg=False, savename='wind_vectors.png', 
+                 sformat='png'):
     
     """ Plot the horizontal and vertical wind on a model level in one figure."""
 
@@ -154,7 +156,6 @@ def wind_vectors(plobject, meaning=True, time_slice=-1, n=2,
         v = v[time_slice,:,:]
         w = w[time_slice,:,:]
 
-#    X, Y = np.meshgrid(np.arange(0,len(plobject.lons)), np.arange(0,len(plobject.lats)))
     X, Y = np.meshgrid(plobject.lons, plobject.lats)
     fig, ax = plt.subplots(figsize=(8,5))
     wplot = ax.contourf(plobject.lons, plobject.lats, w, 
@@ -168,7 +169,11 @@ def wind_vectors(plobject, meaning=True, time_slice=-1, n=2,
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
     plt.title(f'Winds of Venus, h={int(plobject.heights[level])} km')
-    plt.show()
+    if savearg==True:
+        plt.savefig(savename, format=sformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
 
 # %%
 def psi_m(plobject, meaning=True, trange=(-230,-1), time_slice=-1, plot=True):
