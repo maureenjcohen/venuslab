@@ -253,8 +253,14 @@ if __name__ == "__main__":
     # Figure 4
     polar_aoa(simulations[0], savearg=True, sformat=saveas)
     # Subplots for Figure 5
-    wind_vectors(simulations[0], meaning=False, time_slice=1850, lev=16,
-                 savearg=True, savename='wind_vectors_lev6_t1850.png', sformat=saveas)
+    wind_vectors(simulations[0], meaning=False, time_slice=1860, lev=15,
+                 savearg=True, savename='wind_vectors_lev15_t1860.png', sformat=saveas)
+    wind_vectors(simulations[0], meaning=False, time_slice=1863, lev=15,
+                savearg=True, savename='wind_vectors_lev15_t1863.png', sformat=saveas)
+    wind_vectors(simulations[0], meaning=False, time_slice=1860, lev=22,
+                 savearg=True, savename='wind_vectors_lev22_t1860.png', sformat=saveas)
+    wind_vectors(simulations[0], meaning=False, time_slice=1863, lev=22,
+                savearg=True, savename='wind_vectors_lev22_t1860.png', sformat=saveas)               
 
 
 # %%
