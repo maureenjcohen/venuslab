@@ -90,6 +90,7 @@ def zmage(plobject, hmin=0, hmax=20, time_slice=-2, convert2yr=True,
     zmslice = zmageo[hmin:hmax,:]
  #   levels = np.linspace(np.min(zmslice),np.max(zmslice),40)
     
+    fig = plt.figure(figsize=(6, 6))
     plt.contourf(plobject.lats, plobject.heights[hmin:hmax], 
                  zmslice, 
 #                 levels=levels,
