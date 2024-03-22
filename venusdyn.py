@@ -5,7 +5,7 @@ from matplotlib.colors import TwoSlopeNorm
 from scipy.integrate import cumtrapz
 
 # %%
-def zmzw(plobject, meaning=True, time_slice=-1, 
+def zmzw(plobject, meaning=True, trange=(0,-1), time_slice=-1, plot=True,
          save=False, saveformat='png', savename='zmzw.png'):
 
     """ Input: numpy array for zonal wind 
@@ -16,26 +16,29 @@ def zmzw(plobject, meaning=True, time_slice=-1,
 
     zonal = plobject.data['vitu']
     if meaning==True:
-        zonal = np.mean(zonal, axis=0)
+        zonal = np.mean(zonal[trange[0]:trange[1],:,:,:], axis=0)
     else:
         zonal = zonal[time_slice,:,:,:]
     zmean = np.mean(zonal, axis=-1) 
-    
-    plt.contourf(plobject.lats, plobject.heights, -zmean, 
-                 cmap='RdBu', norm=TwoSlopeNorm(0))
-    plt.title('Zonal mean zonal wind')
-    plt.xlabel('Latitude [deg]')
-    plt.ylabel('Height [km]')
-    cbar = plt.colorbar()
-    cbar.ax.set_title('m/s')
-    if save==True:
-        plt.savefig(savename, format=saveformat, bbox_inches='tight')
-        plt.close()
+
+    if plot==True:
+        plt.contourf(plobject.lats, plobject.heights, -zmean, 
+                    cmap='RdBu', norm=TwoSlopeNorm(0))
+        plt.title('Zonal mean zonal wind')
+        plt.xlabel('Latitude [deg]')
+        plt.ylabel('Height [km]')
+        cbar = plt.colorbar()
+        cbar.ax.set_title('m/s')
+        if save==True:
+            plt.savefig(savename, format=saveformat, bbox_inches='tight')
+            plt.close()
+        else:
+            plt.show()
     else:
-        plt.show()
+        return zmean
 
 # %%
-def zmmw(plobject, meaning=True, time_slice=-1, 
+def zmmw(plobject, meaning=True, time_slice=-1, plot=True,
          save=False, saveformat='png', savename='zmzw.png'):
 
     """ Input: numpy array for meridional wind 
@@ -50,19 +53,22 @@ def zmmw(plobject, meaning=True, time_slice=-1,
     else:
         zonal = zonal[time_slice,:,:,:]
     zmean = np.mean(zonal, axis=-1) 
-    
-    plt.contourf(plobject.lats, plobject.heights[:-5], zmean[:-5,:], 
-                 cmap='RdBu_r', levels=np.arange(-10,10,1), norm=TwoSlopeNorm(0))
-    plt.title('Zonal mean meridional wind')
-    plt.xlabel('Latitude [deg]')
-    plt.ylabel('Height [km]')
-    cbar = plt.colorbar()
-    cbar.ax.set_title('m/s')
-    if save==True:
-        plt.savefig(savename, format=saveformat, bbox_inches='tight')
-        plt.close()
+
+    if plot==True:
+        plt.contourf(plobject.lats, plobject.heights[:-5], zmean[:-5,:], 
+                    cmap='RdBu_r', levels=np.arange(-10,10,1), norm=TwoSlopeNorm(0))
+        plt.title('Zonal mean meridional wind')
+        plt.xlabel('Latitude [deg]')
+        plt.ylabel('Height [km]')
+        cbar = plt.colorbar()
+        cbar.ax.set_title('m/s')
+        if save==True:
+            plt.savefig(savename, format=saveformat, bbox_inches='tight')
+            plt.close()
+        else:
+            plt.show()
     else:
-        plt.show()
+        return zmean
 
 #  %%
 def zmzw_snaps(plobject, time_range=(0,100,10), 
@@ -165,7 +171,7 @@ def wind_vectors(plobject, meaning=True, time_slice=-1, n=2,
     plt.show()
 
 # %%
-def psi_m(plobject, meaning=True, trange=(-230,-1), time_slice=-1):
+def psi_m(plobject, meaning=True, trange=(-230,-1), time_slice=-1, plot=True):
 
     """ Plot the mean meridional mass streamfunction. """
 
@@ -188,15 +194,17 @@ def psi_m(plobject, meaning=True, trange=(-230,-1), time_slice=-1):
     stf = -cumtrapz(integrand, axis=0)
     stf_constant = (2*np.pi*plobject.radius*1e3)*(np.cos(plobject.lats*(np.pi/180)))/(plobject.g)
     stf = stf_constant*np.flip(stf, axis=0)*1e-10
-
-    fig, ax = plt.subplots(figsize=(6,6))
-    cs = plt.contour(plobject.lats, plobject.heights[:-1], stf, colors='black',
-                     levels=40)
-    ax.clabel(cs, cs.levels, inline=True)
-    plt.title('Mean meridional mass streamfunction, $10^{10}$ kg/s')
-    plt.xlabel('Latitude [deg]')
-    plt.ylabel('Height [km]')
-    plt.show()
+    if plot==True:
+        fig, ax = plt.subplots(figsize=(6,6))
+        cs = plt.contour(plobject.lats, plobject.heights[:-1], stf, colors='black',
+                        levels=40)
+        ax.clabel(cs, cs.levels, inline=True)
+        plt.title('Mean meridional mass streamfunction, $10^{10}$ kg/s')
+        plt.xlabel('Latitude [deg]')
+        plt.ylabel('Height [km]')
+        plt.show()
+    else:
+        return stf
 
 # %%
 def wmap(plobject, meaning=True, lev=30, time_slice=-1, wtype='Vertical'):
