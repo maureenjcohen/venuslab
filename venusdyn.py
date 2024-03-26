@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
 from scipy.integrate import cumtrapz
+from mpl_toolkits.mplot3d import axes3d
 
 # %%
 def zmzw(plobject, meaning=True, trange=(0,-1), time_slice=-1, plot=True,
@@ -125,7 +126,8 @@ def u_series(plobject, time_range=(0,-1), meaning=True, lat=16, lon=24, lev=40,
 
 # %%
 def wind_vectors(plobject, meaning=True, time_slice=-1, n=2, 
-                 qscale=2, level=40, wtype='Vertical',
+                 qscale=2, level=40, wtype='Vertical', fsize=14,
+                 clevs=np.arange(-0.06,0.08,0.01),
                  savearg=False, savename='wind_vectors.png', 
                  sformat='png'):
     
@@ -159,16 +161,18 @@ def wind_vectors(plobject, meaning=True, time_slice=-1, n=2,
     X, Y = np.meshgrid(plobject.lons, plobject.lats)
     fig, ax = plt.subplots(figsize=(8,5))
     wplot = ax.contourf(plobject.lons, plobject.lats, w, 
-                      cmap='coolwarm', norm=TwoSlopeNorm(0))
+                        levels=clevs,
+                        cmap='coolwarm', norm=TwoSlopeNorm(0))
     cbar = plt.colorbar(wplot, orientation='vertical', fraction=0.05)
     cbar.set_label(f'Vertical wind, {unit}', loc='center')
     q1 = ax.quiver(X[::n, ::n], Y[::n, ::n], -u[::n, ::n],
                    v[::n, ::n], angles='xy', scale_units='xy', scale=qscale)
     ax.quiverkey(q1, X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
                  labelpos='E', coordinates='axes')
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
-    plt.title(f'Winds of Venus, h={int(plobject.heights[level])} km')
+    plt.xlabel('Longitude [deg]', fontsize=fsize)
+    plt.ylabel('Latitude [deg]', fontsize=fsize)
+    plt.title(f'Horizontal and vertical wind, h={int(plobject.heights[level])} km',
+              fontsize=fsize)
     if savearg==True:
         plt.savefig(savename, format=sformat, bbox_inches='tight')
         plt.close()
@@ -333,8 +337,8 @@ def vprofile(plobject, key, coords, ptitle, xlab, unit,
 
 # %%
 def time_series(plobject, key, coords, ptitle, ylab, unit,
-                trange,
-                save=False, saveformat='png', 
+                trange=[1777,1877], tunit='Venus days',
+                fsize=14, save=False, saveformat='png', 
                 savename='timeseries.png'):
     """ Plot time series of cube with the input key,
         at the gridbox coordinates given in the coords
@@ -352,21 +356,23 @@ def time_series(plobject, key, coords, ptitle, ylab, unit,
             cube = -(cube*temp*plobject.RCO2)/(pres*plobject.g)
             series_list.append(cube)
 
-            alt_lab = plobject.heights[coord[0]] 
+            alt_lab = np.round(plobject.heights[coord[0]],0)
             lat_lab = plobject.lats[coord[1]]
             lon_lab = plobject.lons[coord[2]]
             labs = np.array([alt_lab, lat_lab, lon_lab])
             coords_list.append(labs)
-
+    print(coords_list)
     fig, ax = plt.subplots(figsize=(8,6))
-
+    colors=['tab:blue','tab:green','tab:orange']
     for ind, item in enumerate(series_list):
         print('Plotting item ' + str(ind))
         plt.plot(item,
-                 label=f'{coords_list[ind][1]}$^\circ$ lat, {coords_list[ind][2]}$^\circ$ lon, {coords_list[ind][0]} km')
-    plt.title(f'Time series of {ptitle}')
-    plt.xlabel('Time')
-    plt.ylabel(f'{ylab} [{unit}]')
+                 color=colors[ind],
+                 label=f'{int(coords_list[ind][1])}$^\circ$ lat, {int(coords_list[ind][2])}$^\circ$ lon, {int(coords_list[ind][0])} km')
+    plt.title(f'Time series of {ptitle}', fontsize=fsize+2)
+    plt.xlabel(f'Time [{tunit}]', fontsize=fsize)
+    plt.xticks(ticks=[0,20,40,60,80,100],labels=[0,1,2,3,4,5])
+    plt.ylabel(f'{ylab} [{unit}]', fontsize=fsize)
     plt.legend()
     if save==True:
         plt.savefig(savename, format=saveformat, bbox_inches='tight')
@@ -374,9 +380,33 @@ def time_series(plobject, key, coords, ptitle, ylab, unit,
     else:
         plt.show()
 
+# %%
+def vectors_3D(plobject, n=4, time_slice=-2,
+               lonrange=[0,-1],
+               latrange=[48,97], hlev=16):
+    """ Plot a 3D vector field of one model level
+        Work in progress """
 
+    X, Y, Z = np.meshgrid(plobject.lons[lonrange[0]:lonrange[1]], 
+                          plobject.lats[latrange[0]:latrange[1]], 
+                          plobject.heights[hlev])
+  
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.view_init(elev=45, azim=50, roll=0)
 
-    
+    u = plobject.data['vitu'][time_slice,:,latrange[0]:latrange[1],lonrange[0]:lonrange[1]]
+    v = plobject.data['vitv'][time_slice,:,latrange[0]:latrange[1],lonrange[0]:lonrange[1]]
+
+    omega = plobject.data['vitw'][time_slice,:,latrange[0]:latrange[1],lonrange[0]:lonrange[1]]
+    temp = plobject.data['temp'][time_slice,:,latrange[0]:latrange[1],lonrange[0]:lonrange[1]]
+    pres = plobject.data['pres'][time_slice,:,latrange[0]:latrange[1],lonrange[0]:lonrange[1]]
+    w = -(omega*temp*plobject.RCO2)/(pres*plobject.g)*10
+
+    ax.quiver(X[::n,::n,:], Y[::n,::n,:], Z[::n,::n,:], 
+              u[hlev,::n,::n].T, v[hlev,::n,::n].T, w[hlev,::n,::n].T,
+              length=0.1, cmap=plt.cm.jet)
+    plt.show()
 
 
 # %%

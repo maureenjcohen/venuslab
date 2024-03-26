@@ -1,8 +1,8 @@
 """ Uses functions from venuslab to auto-generate plots for
-    'Tidally locked circulation regimes in the deep atmosphere of Venus',
+    'The 3-D structure of the Venus atmosphere revealed by mean age of air',
      Cohen et al. 2024                                       """
 
-""" Usage python: make_aoa.py
+""" Usage from command line: python make_aoa.py
     No inputs required as filepaths are specified in script """
 
 # Input file paths and outputs - only part of script that should be edited
@@ -23,7 +23,7 @@ saveas = 'png'
 from venusdata import *
 from venusaoa import *
 from venusrossby import *
-from venusdyn import psi_m, zmzw, wind_vectors
+from venusdyn import psi_m, zmzw, time_series
 from venuspoles import add_circle_boundary, add_cycl_point
 
 import numpy as np
@@ -185,7 +185,8 @@ def aoa_profiles(plobjects, coords=[0,48,96],
         plt.show()
 
 # %%
-def polar_aoa(plobject, trange=np.arange(1860,1866,1), lev=25,
+def polar_aoa(plobject, trange=np.arange(1856,1862,1), lev=25,
+              clevs=np.arange(24.5,27.0,0.2),
               fsize=14, savearg=False, savename='fig4_polar_aoa.png', 
               sformat='png'):
     """ Four-plot figure showing snapshots of the south polar
@@ -218,8 +219,8 @@ def polar_aoa(plobject, trange=np.arange(1860,1866,1), lev=25,
         snap, clon = add_cycl_point(snap, plobject.lons, -1)
         polarsnap = axitem.contourf(clon, plobject.lats,
                                     snap, cmap='cividis',
-                                    levels=np.arange(24.5,27,0.2),
-                                    extend='both', 
+                                    levels=clevs,
+#                                    extend='both', 
                                     transform=ccrs.PlateCarree())
         axitem.set_title(timedict[str(counter)])
 
@@ -227,8 +228,126 @@ def polar_aoa(plobject, trange=np.arange(1860,1866,1), lev=25,
     cbar = fig.colorbar(polarsnap, cax=cbar_ax, orientation='horizontal',
                         extend='both')
     cbar.set_label(label='years', fontsize=fsize-2)
-    fig.suptitle(f'Age of air at south pole, \n h={np.round(plobject.heights[lev],0)} km', fontsize=fsize+2, y=1.1)
+    fig.suptitle(f'Age of air at south pole, \n h={np.round(plobject.heights[lev],0)} km', fontsize=fsize+2, y=1.125)
     plt.subplots_adjust(wspace=None, hspace=0.18)
+
+    if savearg==True:
+        plt.savefig(savename, format=sformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
+
+# %%
+def aoa_slices(plobject, times=[1856,1858], levs=[15,22],
+               fsize=14,
+               savearg=False, savename='fig5_aoa_slices.png', 
+               sformat='png'):
+    """ Figure with four subplots showing two timesnaps for two different
+        levels with horizontal wind vectors and vertical wind as contourfill"""
+    
+    surface = plobject.data['age'][times[0]:times[1]+1,levs[0]:levs[1]+1,:,:]/(60*60*24*360)
+
+    fig, ax = plt.subplots(2, 2, figsize=(12,8), sharex=True, sharey=True)
+
+    cf1 = ax[0,0].contourf(plobject.lons, plobject.lats, surface[0,0,:,:],
+                     levels=np.arange(16.5,22.5,0.25), 
+                     extend='both', cmap='cividis')
+    ax[0,0].set_ylabel('Latitude [deg]', fontsize=fsize)
+    ax[0,0].set_title(f'h={np.round(plobject.heights[levs[0]],0)} km, day 0', fontsize=fsize)
+    cbar1 = plt.colorbar(cf1, orientation='vertical', fraction=0.05)
+    cbar1.set_label(f'years', loc='center')
+
+    cf2 = ax[0,1].contourf(plobject.lons, plobject.lats,surface[-1,0,:,:],
+                     levels=np.arange(16.5,22.5,0.25), 
+                     extend='both', cmap='cividis')
+    ax[0,1].set_title(f'h={np.round(plobject.heights[levs[0]],0)} km, day 12', fontsize=fsize)
+    cbar2 = plt.colorbar(cf2, orientation='vertical', fraction=0.05)
+    cbar2.set_label(f'years', loc='center')
+
+    cf3 = ax[1,0].contourf(plobject.lons, plobject.lats, surface[0,-1,:,:],
+                     levels=np.arange(23.5,27,0.25), 
+                     extend='both', cmap='cividis')
+    cbar3 = plt.colorbar(cf3, orientation='vertical', fraction=0.05)
+    cbar3.set_label(f'years', loc='center')
+    ax[1,0].set_ylabel('Latitude [deg]', fontsize=fsize)
+    ax[1,0].set_xlabel('Longitude [deg]', fontsize=fsize)
+    ax[1,0].set_title(f'h={np.round(plobject.heights[levs[-1]],0)} km, day 0', fontsize=fsize)
+    
+    cf4 = ax[1,1].contourf(plobject.lons, plobject.lats, surface[-1,-1,:,:],
+                     levels=np.arange(23.5,27,0.25), 
+                     extend='both', cmap='cividis')
+    cbar4 = plt.colorbar(cf4, orientation='vertical', fraction=0.05)
+    cbar4.set_label(f'years', loc='center')
+    ax[1,1].set_xlabel('Longitude [deg]', fontsize=fsize)
+    ax[1,1].set_title(f'h={np.round(plobject.heights[levs[-1]],0)} km, day 12', fontsize=fsize)
+
+    fig.suptitle('Age of air in the deep atmosphere', fontsize=fsize+2, y=0.95)
+
+    if savearg==True:
+        plt.savefig(savename, format=sformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
+
+# %%
+def wind_composites(plobject, times=[1856,1858], levs=[15,22],
+               fsize=14, qscale=1, n=4, clevs=np.arange(-0.06,0.07,0.01),
+               savearg=False, savename='fig6_wind_composites.png', 
+               sformat='png'):
+    """ Figure with four subplots showing two timesnaps for two different
+        levels with horizontal wind vectors and vertical wind as contourfill"""
+    
+    u = plobject.data['vitu'][times[0]:times[1]+1,levs[0]:levs[1]+1,:,:]
+    v = plobject.data['vitv'][times[0]:times[1]+1,levs[0]:levs[1]+1,:,:]
+    omega = plobject.data['vitw'][times[0]:times[1]+1,levs[0]:levs[1]+1,:,:]
+    temp = plobject.data['temp'][times[0]:times[1]+1,levs[0]:levs[1]+1,:,:]
+    pres = plobject.data['pres'][times[0]:times[1]+1,levs[0]:levs[1]+1,:,:]
+    w = -(omega*temp*plobject.RCO2)/(pres*plobject.g)
+
+    X, Y = np.meshgrid(plobject.lons, plobject.lats)
+    fig, ax = plt.subplots(2, 2, figsize=(12,8), sharex=True, sharey=True)
+
+    cf1 = ax[0,0].contourf(plobject.lons, plobject.lats, w[0,0,:,:],
+                     levels=clevs, cmap='coolwarm', extend='both', norm=TwoSlopeNorm(0))
+    q1 = ax[0,0].quiver(X[::n, ::n], Y[::n, ::n], -u[0,0,::n,::n],
+                   v[0,0,::n,::n], angles='xy', scale_units='xy', scale=qscale)
+    ax[0,0].quiverkey(q1, X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
+                 labelpos='E', coordinates='axes')
+    ax[0,0].set_ylabel('Latitude [deg]', fontsize=fsize)
+    ax[0,0].set_title(f'h={np.round(plobject.heights[levs[0]],0)} km, day 0', fontsize=fsize)
+    
+    cf2 = ax[0,1].contourf(plobject.lons, plobject.lats, w[-1,0,:,:],
+                     levels=clevs, cmap='coolwarm', extend='both', norm=TwoSlopeNorm(0))
+    q2 = ax[0,1].quiver(X[::n, ::n], Y[::n, ::n], -u[-1,0,::n,::n],
+                   v[-1,0,::n,::n], angles='xy', scale_units='xy', scale=qscale)
+    ax[0,1].quiverkey(q2, X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
+                 labelpos='E', coordinates='axes')
+    ax[0,1].set_title(f'h={np.round(plobject.heights[levs[0]],0)} km, day 12', fontsize=fsize)
+    
+    cf3 = ax[1,0].contourf(plobject.lons, plobject.lats, w[0,-1,:,:],
+                     levels=clevs, cmap='coolwarm', extend='both', norm=TwoSlopeNorm(0))
+    q3 = ax[1,0].quiver(X[::n, ::n], Y[::n, ::n], -u[0,-1,::n,::n],
+                   v[0,-1,::n,::n], angles='xy', scale_units='xy', scale=qscale)
+    ax[1,0].quiverkey(q3, X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
+                 labelpos='E', coordinates='axes')
+    ax[1,0].set_ylabel('Latitude [deg]', fontsize=fsize)
+    ax[1,0].set_xlabel('Longitude [deg]', fontsize=fsize)
+    ax[1,0].set_title(f'h={np.round(plobject.heights[levs[-1]],0)} km, day 0', fontsize=fsize)
+    
+    cf4 = ax[1,1].contourf(plobject.lons, plobject.lats, w[-1,-1,:,:],
+                     levels=clevs, cmap='coolwarm', extend='both', norm=TwoSlopeNorm(0))
+    q4 = ax[1,1].quiver(X[::n, ::n], Y[::n, ::n], -u[-1,-1,::n,::n],
+                   v[-1,-1,::n,::n], angles='xy', scale_units='xy', scale=qscale)
+    ax[1,1].quiverkey(q4, X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
+                 labelpos='E', coordinates='axes')
+    ax[1,1].set_xlabel('Longitude [deg]', fontsize=fsize)
+    ax[1,1].set_title(f'h={np.round(plobject.heights[levs[-1]],0)} km, day 12', fontsize=fsize)
+
+    fig.subplots_adjust(right=0.8)
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.02, 0.7])
+    cbar = fig.colorbar(cf4, cax=cbar_ax)
+    cbar.set_label(f'Vertical wind [m/s]', loc='center')
+    fig.suptitle('General circulation of the deep atmosphere', fontsize=fsize+2, y=0.95)
 
     if savearg==True:
         plt.savefig(savename, format=sformat, bbox_inches='tight')
@@ -244,23 +363,23 @@ if __name__ == "__main__":
     # List item 1 is Surface, List item 2 is Cloud
 
     # Figure 1
-    baseline_atmosphere(simulations[0], trange=(0,-1), savearg=True,
+    baseline_atmosphere(simulations[0], trange=(0,-1), savearg=False,
                         sformat=saveas)
     # Figure 2
-    zonal_mean_aoa(simulations, savearg=True, sformat=saveas)
+    zonal_mean_aoa(simulations, savearg=False, sformat=saveas)
     # Figure 3
-    aoa_profiles(simulations, savearg=True, sformat=saveas)
+    aoa_profiles(simulations, savearg=False, sformat=saveas)
     # Figure 4
-    polar_aoa(simulations[0], savearg=True, sformat=saveas)
-    # Subplots for Figure 5
-    wind_vectors(simulations[0], meaning=False, time_slice=1860, lev=15,
-                 savearg=True, savename='wind_vectors_lev15_t1860.png', sformat=saveas)
-    wind_vectors(simulations[0], meaning=False, time_slice=1863, lev=15,
-                savearg=True, savename='wind_vectors_lev15_t1863.png', sformat=saveas)
-    wind_vectors(simulations[0], meaning=False, time_slice=1860, lev=22,
-                 savearg=True, savename='wind_vectors_lev22_t1860.png', sformat=saveas)
-    wind_vectors(simulations[0], meaning=False, time_slice=1863, lev=22,
-                savearg=True, savename='wind_vectors_lev22_t1860.png', sformat=saveas)               
-
+    polar_aoa(simulations[0], savearg=False, sformat=saveas)
+    # Figure 5
+    aoa_slices(simulations[0], savearg=False, sformat=saveas)
+    # Figure 6
+    wind_composites(simulations[0], savearg=False, sformat=saveas)
+    # Figure 7
+    time_series(simulations[0], key='vitw', 
+                coords=[(16,86,48),(22,86,48),(30,86,48)], 
+                ptitle='vertical wind', ylab='Wind velocity', 
+                unit='m/s', trange=[1777,1877], tunit='Venus days',
+                fsize=14, savearg=False, sformat=saveas)
 
 # %%
