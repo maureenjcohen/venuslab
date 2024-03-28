@@ -65,8 +65,8 @@ def baseline_atmosphere(plobject, trange=(-10,-1), fsize=14,
                  levels=np.arange(-120,40,10),
                  cmap='RdBu', norm=TwoSlopeNorm(0))
     ax1.set_title('Zonal mean zonal wind', fontsize=fsize)
-    ax1.set_xlabel('Latitude [deg]', fontsize=fsize)
-    ax1.set_ylabel('Height [km]', fontsize=fsize)
+    ax1.set_xlabel('Latitude / deg', fontsize=fsize)
+    ax1.set_ylabel('Height / km', fontsize=fsize)
     cbar = plt.colorbar(cf, ax=ax1, orientation='vertical')
     cbar.ax.set_title('m/s')
     lat_ticks = ax1.get_xticks()
@@ -75,9 +75,9 @@ def baseline_atmosphere(plobject, trange=(-10,-1), fsize=14,
                 mass_streamfunction, colors='black',
                 levels=np.arange(-100,100,10))
     ax2.clabel(cs, cs.levels, inline=True)
-    ax2.set_title('Mean meridional mass streamfunction [$10^{10}$ kg/s]',
+    ax2.set_title('Mean meridional mass streamfunction / $10^{10}$ kg/s',
                   fontsize=fsize)
-    ax2.set_xlabel('Latitude [deg]', fontsize=fsize)
+    ax2.set_xlabel('Latitude / deg', fontsize=fsize)
     ax2.set_xticks(lat_ticks[1:-1])
 
     plt.subplots_adjust(wspace=0.03)
@@ -110,7 +110,7 @@ def zonal_mean_aoa(plobjects, time_slice=-2, fsize=14,
                                  surface, levels=np.arange(0,29,2), 
                                  cmap='cividis', extend='both')
     ax[0,0].set_title('Surface tracer', fontsize=fsize)
-    ax[0,0].set_ylabel('Height [km]', fontsize=fsize)
+    ax[0,0].set_ylabel('Height / km', fontsize=fsize)
     cbar1 = plt.colorbar(surf_full, ax=ax[0,0], orientation='vertical')
     cbar1.ax.set_title('years')
 
@@ -125,8 +125,8 @@ def zonal_mean_aoa(plobjects, time_slice=-2, fsize=14,
                                  surface[13:38], levels=np.arange(16,29,1), 
                                  cmap='cividis', extend='both')
     ax[1,0].set_title('Zoom', fontsize=fsize)
-    ax[1,0].set_ylabel('Height [km]', fontsize=fsize)
-    ax[1,0].set_xlabel('Latitude [deg]', fontsize=fsize)
+    ax[1,0].set_ylabel('Height / km', fontsize=fsize)
+    ax[1,0].set_xlabel('Latitude / deg', fontsize=fsize)
     cbar3 = plt.colorbar(surf_zoom, ax=ax[1,0], orientation='vertical', aspect=10)
     cbar3.ax.set_title('years')
 
@@ -134,7 +134,7 @@ def zonal_mean_aoa(plobjects, time_slice=-2, fsize=14,
                                   cloud[25:50], levels=np.arange(0,1.6,0.2), 
                                   cmap='cividis', extend='both')
     ax[1,1].set_title('Zoom', fontsize=fsize)
-    ax[1,1].set_xlabel('Latitude [deg]', fontsize=fsize)
+    ax[1,1].set_xlabel('Latitude / deg', fontsize=fsize)
     cbar3 = plt.colorbar(cloud_zoom, ax=ax[1,1], orientation='vertical', aspect=10)
     cbar3.ax.set_title('years')
 
@@ -162,8 +162,8 @@ def aoa_profiles(plobjects, coords=[0,48,96],
         ax1.plot(surface[:,coord], plobjects[0].heights,
                  label=f'{lat_lab}$^\circ$ lat')
     ax1.set_title('Surface tracer', fontsize=fsize)
-    ax1.set_ylabel('Heights [km]', fontsize=fsize)
-    ax1.set_xlabel('Age [years]', fontsize=fsize)
+    ax1.set_ylabel('Height / km', fontsize=fsize)
+    ax1.set_xlabel('Age / years', fontsize=fsize)
     ax1.grid()
     ax1.legend()
 
@@ -172,7 +172,7 @@ def aoa_profiles(plobjects, coords=[0,48,96],
         ax2.plot(cloud[:,coord], plobjects[1].heights,
                  label=f'{lat_lab}$^\circ$ lat')
     ax2.set_title('Cloud tracer', fontsize=fsize)
-    ax2.set_xlabel('Age [years]', fontsize=fsize)
+    ax2.set_xlabel('Age / years', fontsize=fsize)
     ax2.grid()
     ax2.legend()
 
@@ -252,7 +252,7 @@ def aoa_slices(plobject, times=[1856,1858], levs=[15,22],
     cf1 = ax[0,0].contourf(plobject.lons, plobject.lats, surface[0,0,:,:],
                      levels=np.arange(16.5,22.5,0.25), 
                      extend='both', cmap='cividis')
-    ax[0,0].set_ylabel('Latitude [deg]', fontsize=fsize)
+    ax[0,0].set_ylabel('Latitude / deg', fontsize=fsize)
     ax[0,0].set_title(f'h={np.round(plobject.heights[levs[0]],0)} km, day 0', fontsize=fsize)
     cbar1 = plt.colorbar(cf1, orientation='vertical', fraction=0.05)
     cbar1.set_label(f'years', loc='center')
@@ -269,8 +269,8 @@ def aoa_slices(plobject, times=[1856,1858], levs=[15,22],
                      extend='both', cmap='cividis')
     cbar3 = plt.colorbar(cf3, orientation='vertical', fraction=0.05)
     cbar3.set_label(f'years', loc='center')
-    ax[1,0].set_ylabel('Latitude [deg]', fontsize=fsize)
-    ax[1,0].set_xlabel('Longitude [deg]', fontsize=fsize)
+    ax[1,0].set_ylabel('Latitude / deg', fontsize=fsize)
+    ax[1,0].set_xlabel('Longitude / deg', fontsize=fsize)
     ax[1,0].set_title(f'h={np.round(plobject.heights[levs[-1]],0)} km, day 0', fontsize=fsize)
     
     cf4 = ax[1,1].contourf(plobject.lons, plobject.lats, surface[-1,-1,:,:],
@@ -278,7 +278,7 @@ def aoa_slices(plobject, times=[1856,1858], levs=[15,22],
                      extend='both', cmap='cividis')
     cbar4 = plt.colorbar(cf4, orientation='vertical', fraction=0.05)
     cbar4.set_label(f'years', loc='center')
-    ax[1,1].set_xlabel('Longitude [deg]', fontsize=fsize)
+    ax[1,1].set_xlabel('Longitude / deg', fontsize=fsize)
     ax[1,1].set_title(f'h={np.round(plobject.heights[levs[-1]],0)} km, day 12', fontsize=fsize)
 
     fig.suptitle('Age of air in the deep atmosphere', fontsize=fsize+2, y=0.95)
@@ -313,7 +313,7 @@ def wind_composites(plobject, times=[1856,1858], levs=[15,22],
                    v[0,0,::n,::n], angles='xy', scale_units='xy', scale=qscale)
     ax[0,0].quiverkey(q1, X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
                  labelpos='E', coordinates='axes')
-    ax[0,0].set_ylabel('Latitude [deg]', fontsize=fsize)
+    ax[0,0].set_ylabel('Latitude / deg', fontsize=fsize)
     ax[0,0].set_title(f'h={np.round(plobject.heights[levs[0]],0)} km, day 0', fontsize=fsize)
     
     cf2 = ax[0,1].contourf(plobject.lons, plobject.lats, w[-1,0,:,:],
@@ -330,8 +330,8 @@ def wind_composites(plobject, times=[1856,1858], levs=[15,22],
                    v[0,-1,::n,::n], angles='xy', scale_units='xy', scale=qscale)
     ax[1,0].quiverkey(q3, X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
                  labelpos='E', coordinates='axes')
-    ax[1,0].set_ylabel('Latitude [deg]', fontsize=fsize)
-    ax[1,0].set_xlabel('Longitude [deg]', fontsize=fsize)
+    ax[1,0].set_ylabel('Latitude / deg', fontsize=fsize)
+    ax[1,0].set_xlabel('Longitude / deg', fontsize=fsize)
     ax[1,0].set_title(f'h={np.round(plobject.heights[levs[-1]],0)} km, day 0', fontsize=fsize)
     
     cf4 = ax[1,1].contourf(plobject.lons, plobject.lats, w[-1,-1,:,:],
@@ -340,13 +340,13 @@ def wind_composites(plobject, times=[1856,1858], levs=[15,22],
                    v[-1,-1,::n,::n], angles='xy', scale_units='xy', scale=qscale)
     ax[1,1].quiverkey(q4, X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
                  labelpos='E', coordinates='axes')
-    ax[1,1].set_xlabel('Longitude [deg]', fontsize=fsize)
+    ax[1,1].set_xlabel('Longitude / deg', fontsize=fsize)
     ax[1,1].set_title(f'h={np.round(plobject.heights[levs[-1]],0)} km, day 12', fontsize=fsize)
 
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.02, 0.7])
     cbar = fig.colorbar(cf4, cax=cbar_ax)
-    cbar.set_label(f'Vertical wind [m/s]', loc='center')
+    cbar.set_label(f'Vertical wind / m/s', loc='center')
     fig.suptitle('General circulation of the deep atmosphere', fontsize=fsize+2, y=0.95)
 
     if savearg==True:
