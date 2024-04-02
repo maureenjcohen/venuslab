@@ -363,9 +363,9 @@ def time_series(plobject, key, coords, ptitle, ylab, unit,
             labs = np.array([alt_lab, lat_lab, lon_lab])
             coords_list.append(labs)
     print(coords_list)
-    fig, ax = plt.subplots(figsize=(8,6))
-    colors=['tab:blue','tab:green','tab:orange']
     if plot==True:
+        fig, ax = plt.subplots(figsize=(8,6))
+        colors=['tab:blue','tab:green','tab:orange']
         for ind, item in enumerate(series_list):
             print('Plotting item ' + str(ind))
             plt.plot(item,

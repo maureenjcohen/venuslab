@@ -148,7 +148,7 @@ class Planet:
 
     def calc_w(self):
         """ Calculate vertical velocity in m/s from Pa/s. """
-        w_wind = -(self.data['vitw'][:]/(self.rho*self.g))
+        w_wind = -(self.data['vitw'][:]*self.data['temp'][:]*self.RCO2)/(self.data['pres'][:]*self.g)
         self.w_wind = w_wind
 
     def set_times(self):

@@ -43,6 +43,11 @@ class Balloon:
         units = labels.values() # Extract units from labels
         self.units = units # Add units to object
 
+        hrs = self.data['Time']/(60*60)
+        real_lons = 176.9-2.216*hrs
+        self.data['Hours'] = hrs
+        self.data['Longitude_b'] = real_lons
+
     def explain_flags(self):
         print('Data quality flag for previous column.')
         print('0 indicates no data; 1 indicates erroneous data.')
