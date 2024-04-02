@@ -379,7 +379,8 @@ if __name__ == "__main__":
     time_series(simulations[0], key='vitw', 
                 coords=[(16,86,48),(22,86,48),(30,86,48)], 
                 ptitle='vertical wind', ylab='Wind velocity', 
-                unit='m/s', trange=[1777,1877], tunit='Venus days',
+                unit='m/s', plot=True, trange=[1777,1877], 
+                tunit='Venus days',
                 fsize=14, savearg=False, sformat=saveas)
 
 # %%

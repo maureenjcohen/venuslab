@@ -337,6 +337,7 @@ def vprofile(plobject, key, coords, ptitle, xlab, unit,
 
 # %%
 def time_series(plobject, key, coords, ptitle, ylab, unit,
+                plot=True,
                 trange=[1777,1877], tunit='Venus days',
                 fsize=14, save=False, saveformat='png', 
                 savename='timeseries.png'):
@@ -364,21 +365,24 @@ def time_series(plobject, key, coords, ptitle, ylab, unit,
     print(coords_list)
     fig, ax = plt.subplots(figsize=(8,6))
     colors=['tab:blue','tab:green','tab:orange']
-    for ind, item in enumerate(series_list):
-        print('Plotting item ' + str(ind))
-        plt.plot(item,
-                 color=colors[ind],
-                 label=f'{int(coords_list[ind][1])}$^\circ$ lat, {int(coords_list[ind][2])}$^\circ$ lon, {int(coords_list[ind][0])} km')
-    plt.title(f'Time series of {ptitle}', fontsize=fsize+2)
-    plt.xlabel(f'Time [{tunit}]', fontsize=fsize)
-    plt.xticks(ticks=[0,20,40,60,80,100],labels=[0,1,2,3,4,5])
-    plt.ylabel(f'{ylab} [{unit}]', fontsize=fsize)
-    plt.legend()
-    if save==True:
-        plt.savefig(savename, format=saveformat, bbox_inches='tight')
-        plt.close()
+    if plot==True:
+        for ind, item in enumerate(series_list):
+            print('Plotting item ' + str(ind))
+            plt.plot(item,
+                    color=colors[ind],
+                    label=f'{int(coords_list[ind][1])}$^\circ$ lat, {int(coords_list[ind][2])}$^\circ$ lon, {int(coords_list[ind][0])} km')
+        plt.title(f'Time series of {ptitle}', fontsize=fsize+2)
+        plt.xlabel(f'Time [{tunit}]', fontsize=fsize)
+        plt.xticks(ticks=[0,20,40,60,80,100],labels=[0,1,2,3,4,5])
+        plt.ylabel(f'{ylab} [{unit}]', fontsize=fsize)
+        plt.legend()
+        if save==True:
+            plt.savefig(savename, format=saveformat, bbox_inches='tight')
+            plt.close()
+        else:
+            plt.show()
     else:
-        plt.show()
+        return series_list, coords_list
 
 # %%
 def vectors_3D(plobject, n=4, time_slice=-2,
