@@ -146,7 +146,7 @@ def zonal_mean_aoa(plobjects, time_slice=-2, fsize=14,
     surf_zoom = ax[1,0].contourf(plobjects[0].lats, plobjects[0].heights[13:38],
                                  surface[13:38], levels=np.arange(16,29,1), 
                                  cmap='cividis', extend='both')
-    ax[1,0].set_title('c) Zoom, 20-80 km', fontsize=fsize)
+    ax[1,0].set_title('c) Detail, 20-80 km', fontsize=fsize)
     ax[1,0].set_ylabel('Height / km', fontsize=fsize)
     ax[1,0].set_xlabel('Latitude / deg', fontsize=fsize)
     cbar3 = plt.colorbar(surf_zoom, ax=ax[1,0], orientation='vertical', aspect=10)
@@ -155,7 +155,7 @@ def zonal_mean_aoa(plobjects, time_slice=-2, fsize=14,
     cloud_zoom = ax[1,1].contourf(plobjects[1].lats, plobjects[1].heights[25:50],
                                   cloud[25:50], levels=np.arange(0,1.6,0.2), 
                                   cmap='cividis', extend='both')
-    ax[1,1].set_title('d) Zoom, 50-100 km', fontsize=fsize)
+    ax[1,1].set_title('d) Detail, 50-100 km', fontsize=fsize)
     ax[1,1].set_xlabel('Latitude / deg', fontsize=fsize)
     cbar3 = plt.colorbar(cloud_zoom, ax=ax[1,1], orientation='vertical', aspect=10)
     cbar3.ax.set_title('years')
