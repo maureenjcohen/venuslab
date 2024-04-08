@@ -372,9 +372,9 @@ def time_series(plobject, key, coords, ptitle, ylab, unit,
                     color=colors[ind],
                     label=f'{int(coords_list[ind][1])}$^\circ$ lat, {int(coords_list[ind][2])}$^\circ$ lon, {int(coords_list[ind][0])} km')
         plt.title(f'Time series of {ptitle}', fontsize=fsize+2)
-        plt.xlabel(f'Time [{tunit}]', fontsize=fsize)
+        plt.xlabel(f'Time / {tunit}', fontsize=fsize)
         plt.xticks(ticks=[0,20,40,60,80,100],labels=[0,1,2,3,4,5])
-        plt.ylabel(f'{ylab} [{unit}]', fontsize=fsize)
+        plt.ylabel(f'{ylab} / {unit}', fontsize=fsize)
         plt.legend()
         if save==True:
             plt.savefig(savename, format=saveformat, bbox_inches='tight')

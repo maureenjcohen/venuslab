@@ -217,8 +217,8 @@ def polar_aoa(plobject, trange=np.arange(1856,1862,1), lev=25,
     
     surface = plobject.data['age'][trange[0]:trange[-1]+1,lev,:,:]/(60*60*24*360)
     # Extract a range of data spanning one Venus day
-    timedict = {'1':'Day 0', '2':'Day 6', '3':'Day 12', 
-                '4':'Day 18', '5':'Day 24', '6': 'Day 30'}
+    timedict = {'1':'a) Day 0', '2':'b) Day 6', '3':'c) Day 12', 
+                '4':'d) Day 18', '5':'e) Day 24', '6': 'f) Day 30'}
     fig, ax = plt.subplots(3, 2, figsize=(4,6),
                             subplot_kw={'projection': ccrs.Orthographic(0,-90)},
                             gridspec_kw={'wspace':0, 'top':1., 'bottom':0., 'left':0., 'right':1.})
@@ -426,7 +426,7 @@ def vega_series(bobject1, bobject2, plobject, fsize=14,
 
     ax[2].plot(plobject.lons, vpcm_w, color='k')
     ax[2].plot(plobject.lons, vpcm_background, color='r')
-    ax[2].text(0.4,0.85,f'Background wind = {np.round(vpcm_background[0],4)} m/s', color='r', 
+    ax[2].text(0.4,0.85,f'Background wind = {np.round(vpcm_background[0],3)} m/s', color='r', 
                fontsize=fsize, transform=ax[2].transAxes)
     ax[2].set_xlabel('Longitude / deg', fontsize=fsize)
     ax[2].set_ylabel('Vertical wind / m/s', fontsize=fsize)
@@ -455,22 +455,22 @@ if __name__ == "__main__":
     # List item 1 is balloon 1, list item 2 is balloon 2
 
     # Figure 1
-    baseline_atmosphere(simulations[0], trange=(0,-1), savearg=False,
+    baseline_atmosphere(simulations[0], trange=(0,-1), savearg=True,
                         sformat=saveas, savename=outpath+'fig1_baseline.png')
     # Figure 2
-    zonal_mean_aoa(simulations, savearg=False, sformat=saveas,
+    zonal_mean_aoa(simulations, savearg=True, sformat=saveas,
                    savename=outpath+'fig2_zonalmean_aoa.png')
     # Figure 3
-    aoa_profiles(simulations, savearg=False, sformat=saveas,
+    aoa_profiles(simulations, savearg=True, sformat=saveas,
                  savename=outpath+'fig3_profiles_aoa.png')
     # Figure 4
-    polar_aoa(simulations[0], savearg=False, sformat=saveas,
+    polar_aoa(simulations[0], savearg=True, sformat=saveas,
               savename=outpath+'fig4_polar_aoa.png')
     # Figure 5
-    aoa_slices(simulations[0], savearg=False, sformat=saveas,
+    aoa_slices(simulations[0], savearg=True, sformat=saveas,
                savename=outpath+'fig5_aoa_slices.png')
     # Figure 6
-    wind_composites(simulations[0], savearg=False, sformat=saveas,
+    wind_composites(simulations[0], savearg=True, sformat=saveas,
                     savename=outpath+'fig6_wind_composites.png')
     # Figure 7
     time_series(simulations[0], key='vitw', 
@@ -478,14 +478,14 @@ if __name__ == "__main__":
                 ptitle='vertical wind', ylab='Wind velocity', 
                 unit='m/s', plot=True, trange=[1777,1877], 
                 tunit='Venus days', savename=outpath+'fig7_wtimeseries.png',
-                fsize=14, save=False, saveformat=saveas)
+                fsize=14, save=True, saveformat=saveas)
     # Figure 8
     timeseries_transform(simulations[0],key='vitw', fsize=14, plot_transform=True,
                          coords=[(16,86,48),(22,86,48),(30,86,48)],
-                         trange=[1777,1877], save=False, saveformat=saveas,
+                         trange=[1777,1877], save=True, saveformat=saveas,
                          savename=outpath+'fig8_wfourier_transform.png')
     # Figure 9
-    vega_series(balloons[0], balloons[1], simulations[0], savearg=False,
+    vega_series(balloons[0], balloons[1], simulations[0], savearg=True,
                 savename=outpath+'fig9_vega_series.png', sformat=saveas)
 
 # %%
