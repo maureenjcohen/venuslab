@@ -33,7 +33,7 @@ def omega_profile(plobject, hrange=(0,-1), trange=(0,-1),
         else:
             plt.show()
 
-    return zmean, omega
+    return zmean, omega, period_days
 
 # %%
 def bv_freq(plobject, hrange=(0,-1), trange=(0,-1),

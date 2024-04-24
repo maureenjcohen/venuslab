@@ -25,6 +25,11 @@ north_probe = '/exomars/data/analysis/volume_8/mc5526/pioneer_data/cleaned_north
 
 # %%
 def clean_data(datapath, altspath, startrow, savename):
+    """ Pretty much one-time use function to clean and reorganise data
+        Pioneer Venus probes. Keeping for reference.         
+        Day: startrow = 23
+        Night: startrow = 26
+        North: startrow =  25                    """
 
     probe_data = pd.read_csv(datapath, usecols=['TIME','DOWN','WEST','NORTH'], sep='\s+')
     altitude_data = pd.read_csv(altspath, skiprows=startrow, usecols=['GRT(SEC)','ALT(KM)'])
@@ -43,6 +48,61 @@ def clean_data(datapath, altspath, startrow, savename):
     # New DF with just TIME column and altitudes interpolated for all timestamps
     merged_df['ALT(KM)'] = interp['ALT(KM)']
     # Put the interpolated/completed altitudes column back in original DF
-    cleaned = merged_df.dropna(axis=0, how='any')
+    cleaned = merged_df.dropna(axis=0, how='any').reset_index(drop=True)
     # Now drop rows containing NaNs, aka rows without wind data
     cleaned.to_csv(savename)
+
+## Analytical stuff
+# %%
+class Probe:
+    """ Holds data from one of the Pioneer Venus descent probes """
+
+    def __init__(self, probepath, name):
+        self.name = name # Name of probe, i.e. 'Day','Night','North'
+
+        data = pd.read_csv(probepath, sep=',')
+        self.data = data # Add DataFrame to object
+
+    def profile(self, key):
+        if key=='Zonal wind':
+            cube = self.data['WEST'].values
+        elif key=='Meridional wind':
+            cube = self.data['NORTH'].values
+        elif key=='Descent velocity':
+            cube = self.data['DOWN'].values
+        else:
+            print('Key not recognised. Choose Zonal Wind, Meridional wind, or Descent velocity')
+
+        fig, ax = plt.subplots(figsize=(8,6))
+        plt.plot(cube, self.data['ALT(KM)'].values)
+        plt.title(f'{key} profile from {self.name} probe')
+        plt.xlabel(f'{key} / m/s')
+        plt.ylabel('Altitude [km]')
+        plt.show()
+
+# %%
+def all_probes(probelist, key):
+    """ Plot wind measurements from multiple probes in one figure
+        probelist: list of Probe objects (Day, Night, North)
+        key: variable to plot (Zonal wind, Meridional wind, Descent velocity)"""
+    
+    colors=['tab:blue','tab:green','tab:orange']
+    fig, ax = plt.subplots(figsize=(6,8))
+    for ind, probe in enumerate(probelist):
+        if key=='Zonal wind':
+            cube = probe.data['WEST'].values
+        elif key=='Meridional wind':
+            cube = probe.data['NORTH'].values
+        elif key=='Descent velocity':
+            cube = probe.data['DOWN'].values
+        else:
+            print('Key not recognised. Choose Zonal Wind, Meridional wind, or Descent velocity')
+
+        plt.plot(cube, probe.data['ALT(KM)'].values, color=colors[ind], label=probe.name)
+    plt.title(f'{key} profiles from Pioneer Venus descent probes')
+    plt.xlabel(f'{key} / m/s')
+    plt.ylabel('Altitude [km]')
+    plt.legend()
+    plt.show()
+
+# %%

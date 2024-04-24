@@ -1,5 +1,5 @@
 """ Uses functions from venuslab to auto-generate plots for
-    'The 3-D structure of the Venus atmosphere revealed by mean age of air',
+    'Tracer transport in the Venus atmosphere revealed by mean age of air',
      Cohen et al. 2024                                       """
 
 """ Usage from command line: python make_aoa.py
