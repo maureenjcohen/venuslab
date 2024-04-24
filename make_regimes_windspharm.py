@@ -7,7 +7,7 @@
 
 # Input file paths and outputs - only part of script that should be edited
 # %%
-surfacepath = '/exomars/data/analysis/volume_8/mc5526/aoa_surface.nc'
+vpcm_path = '/home/maureenjcohen/.nc'
 # Simulation with surface age of air tracer - baseline model state
 
 # Import packages
@@ -18,3 +18,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import netCDF4 as nc
 import windspharm
+
+# %%
+def init_model_data(inpath):
+    """ Instantiate Planet object from Venus PCM output data"""
+
+    plobject = Planet(venusdict)
+    plobject.load_file(inpath)
+    plobject.setup()
+
+    return plobject
