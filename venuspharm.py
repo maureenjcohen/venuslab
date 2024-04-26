@@ -28,10 +28,12 @@ def decomposition(plobject, meaning=True, time_slice=-1, level=35, qscale=1,
     # this is what Hammond and Lewis 2021 used.
     zonal_upsi = np.mean(upsi, axis=-1)
     zonal_vpsi = np.mean(vpsi, axis=-1)
+    print(zonal_vpsi.shape)
     zonal_upsi = np.tile(zonal_upsi, (len(plobject.lons), 1))
     zonal_vpsi = np.tile(zonal_vpsi, (len(plobject.lons), 1))
     eddy_upsi = upsi - zonal_upsi.T
     eddy_vpsi = vpsi - zonal_vpsi.T
+    print(zonal_vpsi.shape, zonal_vpsi.T.shape)
 
     X, Y = np.meshgrid(plobject.lons, plobject.lats)
     fig1, ax1 = plt.subplots(figsize=(8,5))
