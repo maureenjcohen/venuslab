@@ -77,10 +77,9 @@ def compare_profiles(plobject, probelist, hrange=(0,-1), fsize=14,
     ax1.legend()
 
     for ind, probe in enumerate(probelist):
-            circumf = 2*np.pi*((plobject.radius + probe.data['ALT(KM)'].values)*1000)
-            period = (circumf/np.abs(probe.data['WEST'].values))
-            omega = (2*np.pi)/period
-            period_days = period/(60*60*24)
+            if not hasattr(probe,'period_days'):
+                probe.calc_omega()
+            period_days = probe.period
             ax2.plot(period_days, probe.data['ALT(KM)'].values, color=colors[ind], label=probe.name)
     ax2.plot(vpcm_period, plobject.heights[:hrange[1]], color='k', linestyle='dashed', label='Venus PCM')
     ax2.set_title('Rotation period of atmosphere', fontsize=fsize)

@@ -59,10 +59,16 @@ class Probe:
 
     def __init__(self, probepath, name):
         self.name = name # Name of probe, i.e. 'Day','Night','North'
+        if name=='North':
+            self.lat = 60
+        else:
+            self.lat = 30
 
         data = pd.read_csv(probepath, sep=',')
         self.data = data # Add DataFrame to object
         self.RCO2 = 287.05
+        self.g = 8.87 
+        self.radius = 6051.3 # km
 
     def profile(self, key):
         if key=='Zonal wind':
@@ -88,6 +94,16 @@ class Probe:
                 self.calc_theta()
             cube = self.theta
             unit = 'K'
+        elif key=='BV frequency':
+            if not hasattr(self,'bv'):
+                self.calc_bv_freq()
+            cube = self.bv
+            unit = 's-1'
+        elif key=='Rotation period':
+            if not hasattr(self,'period'):
+                self.calc_omega()
+            cube = self.period
+            unit = 'Earth days'
         else:
             print('Key not recognised.')
 
@@ -120,6 +136,54 @@ class Probe:
                    self.v0*(self.T0**self.v0)*(np.log((p0/self.data['P(BARS)'][:])**(self.RCO2/self.cp0))))
         theta = theta_v**(1/self.v0)
         self.theta = theta
+
+    def calc_omega(self):
+        """ Calculate effective rotation rate of atmosphere based on
+            zonal wind speed at each altitude                   """
+        circumf = 2*np.pi*((self.radius + self.data['ALT(KM)'].values)*1000)
+        period = (circumf/np.abs(self.data['WEST'].values))
+        omega = (2*np.pi)/period
+        period_days = period/(60*60*24)
+        self.omega = omega
+        self.period = period_days
+
+    def calc_bv_freq(self):
+        if not hasattr(self,'theta'):
+            self.calc_theta()
+
+        th_dz = np.gradient(self.theta)/np.gradient(self.data['ALT(KM)']*1000)
+        root_term = self.g*th_dz/self.theta
+        freq = np.sqrt(root_term)
+        self.bv = freq
+
+    def calc_coriolis(self):
+        if not hasattr(self,'omega'):
+            self.calc_omega()
+        lat_rad = np.deg2rad(self.lat)
+        f = 2*self.omega*np.sin(lat_rad)
+        self.coriolis = f
+
+    def calc_scale_height(self):
+        numerator = (1.38e-23)*self.data['T(DEG K)'].values[:]
+        denom = 44.01*(1.67e-27)*self.g
+        H = numerator/denom
+        self.scale_h = H
+
+    def calc_rossby_radii(self):
+        if not hasattr(self,'bv'):
+            self.calc_bv_freq()
+        if not hasattr(self,'coriolis'):
+            self.calc_coriolis()
+        if not hasattr(self,'scale_h'):
+            self.calc_scale_height()
+
+        extra_r = self.bv*self.scale_h/self.coriolis
+        self.extra_r = extra_r
+
+        beta = 2*self.omega/(self.radius*1000) 
+        trop_r = np.sqrt(self.bv*self.scale_h/(2*beta))
+        self.trop_r = trop_r
+
 
 
 # %%
