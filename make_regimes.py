@@ -106,17 +106,19 @@ def compare_profiles(plobject, probelist, hrange=(0,-1), fsize=14,
         plt.show()
 
 # %%
-def compare_rossby(plobject, probelist, lat=64, hrange=(0,-1), trange=(0,-1),
-                   savearg=False, fsize=14, gmean=True,
+def compare_rossby(plobject, probelist, trop_lat=48, extra_lat=80, 
+                   trop_gmean=False, extra_gmean=False,
+                   hrange=(0,-1), trange=(0,-1),
+                   savearg=False, fsize=14,
                    sformat='png', savename='fig3_radii.png'):
     """ Figure with single sub-plot:
         Rossby radius of deformation as a function of altitude for
         VPCM model output
         Pioneer Venus entry probe wind data                 """
     
-    L_vpcm = extratropical(plobject, gmean=gmean, lat=lat, hrange=hrange, trange=trange)
+    L_vpcm = extratropical(plobject, gmean=extra_gmean, lat=extra_lat, hrange=hrange, trange=trange)
     L_vpcm = L_vpcm/(plobject.radius*1000)
-    lambda_vpcm = tropical(plobject, gmean=gmean, lat=lat, hrange=hrange, trange=trange)
+    lambda_vpcm = tropical(plobject, gmean=trop_gmean, lat=trop_lat, hrange=hrange, trange=trange)
     lambda_vpcm = lambda_vpcm/(plobject.radius*1000)
 
     colors=['tab:blue','tab:green','tab:orange']
@@ -163,6 +165,7 @@ if __name__ == "__main__":
                      savearg=True, savename='fig2_profiles.png',
                      sformat='png')
     
-    compare_rossby(vpcm, pv_probes, lat=80, hrange=(0,-1), 
-                   trange=(0,-1), fsize=14, savearg=False,
+    compare_rossby(vpcm, pv_probes, trop_lat=48, extra_lat=80, 
+                   trop_gmean=False, extra_gmean=False,
+                   hrange=(0,-1), trange=(0,-1), fsize=14, savearg=False,
                    savename='fig3_rossby.png', sformat='png')
