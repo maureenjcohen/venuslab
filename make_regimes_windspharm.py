@@ -84,6 +84,7 @@ def helm_panels(plobject, time_slice=-100, levs=[12,18,30], qscale=[0.1,1,2],
         ax[i,0].set_title(f'{plot_labels[alph_i]}) Horiz. wind, h={np.round(plobject.heights[levs[i]],0)} km', fontsize=fsize-2)
         cbar = plt.colorbar(cf, ax=ax[i,0])
         cbar.set_label('Vertical wind / m/s', loc='center')
+        lat_ticks = ax[i,0].get_yticks()
 
         if i > 1:
             title_str = 'Eddy rot. comp.'
@@ -97,6 +98,7 @@ def helm_panels(plobject, time_slice=-100, levs=[12,18,30], qscale=[0.1,1,2],
         ax[i,1].set_title(f'{plot_labels[alph_i+1]}) {title_str}, h={np.round(plobject.heights[levs[i]],0)} km', fontsize=fsize-2)
         if i == len(levs)-1:
             ax[i,1].set_xlabel('Longitude / deg', fontsize=fsize)
+        ax[i,1].set_yticks(lat_ticks[1:-1])
     
     plt.subplots_adjust(wspace=0.2)
     plt.show()
