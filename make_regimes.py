@@ -96,6 +96,17 @@ def compare_profiles(plobject, probelist, hrange=(0,-1), fsize=14,
     else:
         plt.show()
 
+def compare_rossby(plobject, probelist, lat=64, hrange=(0,-1), trange=(0,-1)):
+    """ Figure with single sub-plot:
+        Rossby radius of deformation as a function of altitude for
+        VPCM model output
+        Pioneer Venus entry probe wind data                 """
+    
+    L_vpcm = extratropical(plobject, lat, hrange, trange)
+    L_vpcm = L_vpcm/(plobject.radius*1000)
+    lambda_vpcm = tropical(plobject, hrange, trange)
+    lambda_vpcm = lambda_vpcm/(plobject.radius*1000)
+
 # %%
 if __name__ == "__main__":
 

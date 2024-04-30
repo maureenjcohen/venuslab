@@ -32,7 +32,7 @@ def clean_data(datapath, altspath, startrow, savename):
         North: startrow =  25                    """
 
     probe_data = pd.read_csv(datapath, usecols=['TIME','DOWN','WEST','NORTH'], sep='\s+')
-    altitude_data = pd.read_csv(altspath, skiprows=startrow, usecols=['GRT(SEC)','ALT(KM)'])
+    altitude_data = pd.read_csv(altspath, skiprows=startrow, usecols=['GRT(SEC)','ALT(KM)','P(BARS)','T(DEG K)','RHO(KG/M3)'])
     # Read in probe data and altitude data from separate csvs
     alts_renamed = altitude_data.rename(columns={'GRT(SEC)':'TIME'})
     # Rename time column in altitudes DF to have same name as probe data DF
@@ -44,9 +44,9 @@ def clean_data(datapath, altspath, startrow, savename):
     # Time is in seconds since the origin date
     merged_df['TIME'] = pd.to_datetime(merged_df['TIME'], unit='s', origin=orig)
     # Change TIME column to a datetime object reported as seconds since Dec 9, 1978
-    interp = merged_df.set_index('TIME')[['ALT(KM)']].interpolate(method='time').reset_index()
+    interp = merged_df.set_index('TIME')[['ALT(KM)','P(BARS)','T(DEG K)','RHO(KG/M3)']].interpolate(method='time').reset_index()
     # New DF with just TIME column and altitudes interpolated for all timestamps
-    merged_df['ALT(KM)'] = interp['ALT(KM)']
+    merged_df[['ALT(KM)','P(BARS)','T(DEG K)','RHO(KG/M3)']] = interp[['ALT(KM)','P(BARS)','T(DEG K)','RHO(KG/M3)']]
     # Put the interpolated/completed altitudes column back in original DF
     cleaned = merged_df.dropna(axis=0, how='any').reset_index(drop=True)
     # Now drop rows containing NaNs, aka rows without wind data
@@ -62,23 +62,65 @@ class Probe:
 
         data = pd.read_csv(probepath, sep=',')
         self.data = data # Add DataFrame to object
+        self.RCO2 = 287.05
 
     def profile(self, key):
         if key=='Zonal wind':
             cube = self.data['WEST'].values
+            unit = 'm/s'
         elif key=='Meridional wind':
             cube = self.data['NORTH'].values
+            unit = 'm/s'
         elif key=='Descent velocity':
             cube = self.data['DOWN'].values
+            unit = 'm/s'
+        elif key=='Temperature':
+            cube = self.data['T(DEG K)']
+            unit = 'K'
+        elif key=='Pressure':
+            cube = self.data['P(BARS)']
+            unit = 'bar'
+        elif key=='Density':
+            cube = self.data['RHO(KG/M3)']
+            unit = 'kg/m3'
+        elif key=='Potential temperature':
+            if not hasattr(self,'theta'):
+                self.calc_theta()
+            cube = self.theta
+            unit = 'K'
         else:
-            print('Key not recognised. Choose Zonal Wind, Meridional wind, or Descent velocity')
+            print('Key not recognised.')
 
         fig, ax = plt.subplots(figsize=(8,6))
         plt.plot(cube, self.data['ALT(KM)'].values)
         plt.title(f'{key} profile from {self.name} probe')
-        plt.xlabel(f'{key} / m/s')
-        plt.ylabel('Altitude [km]')
+        plt.xlabel(f'{key} / {unit}')
+        plt.ylabel('Altitude / km')
         plt.show()
+
+    def calc_cp(self):
+        """ Formula LMDZ Venus uses to vary the specific heat with temperature"""
+        cp0 = 1000 # J/kg/K
+        T0 = 460 # K
+        v0 = 0.35 # exponent
+        cp = cp0*(self.data['T(DEG K)'][:]/T0)**v0
+        self.cp = cp
+        self.cp0 = cp0
+        self.T0 = T0
+        self.v0 = v0
+
+    def calc_theta(self):
+        """ Formula LMDZ Venus uses for potential temperature to account for
+        specific heat capacity varying with height.
+        See Lebonnois et al 2010.   """
+        if not hasattr(self, 'cp'):
+            self.calc_cp()
+        p0 = self.data['P(BARS)'].values[-1]
+        theta_v = (self.data['T(DEG K)'][:]**self.v0 +
+                   self.v0*(self.T0**self.v0)*(np.log((p0/self.data['P(BARS)'][:])**(self.RCO2/self.cp0))))
+        theta = theta_v**(1/self.v0)
+        self.theta = theta
+
 
 # %%
 def all_probes(probelist, key):
@@ -96,7 +138,7 @@ def all_probes(probelist, key):
         elif key=='Descent velocity':
             cube = probe.data['DOWN'].values
         else:
-            print('Key not recognised. Choose Zonal Wind, Meridional wind, or Descent velocity')
+            print('Key not recognised.')
 
         plt.plot(cube, probe.data['ALT(KM)'].values, color=colors[ind], label=probe.name)
     plt.title(f'{key} profiles from Pioneer Venus descent probes')
