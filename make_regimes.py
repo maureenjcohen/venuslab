@@ -60,8 +60,15 @@ def compare_profiles(plobject, probelist, hrange=(0,-1), fsize=14,
         Venus PCM vertical domain is greater than descent probes, so
         we only plot heights up to (inclusive of) model level 30 """
     
-    vpcm_zmean, vpcm_omega, vpcm_period = omega_profile(plobject, hrange=hrange, plot=False, save=False)
-    # Calculate global area-weighted mean zonal wind and atmospheric omega and rotation period
+    vpcm_zmean60, vpcm_omega60, vpcm_period60 = omega_profile(plobject, hrange=hrange, 
+                                                        gmean=False, lat=80,
+                                                        plot=False, save=False)
+    # Calculate mean zonal wind and atmospheric omega and rotation period at 60 N
+    # for Venus PCM output
+    vpcm_zmean30, vpcm_omega30, vpcm_period30 = omega_profile(plobject, hrange=hrange, 
+                                                        gmean=False, lat=64,
+                                                        plot=False, save=False)
+    # Calculate mean zonal wind and atmospheric omega and rotation period at 60 N
     # for Venus PCM output
 
     colors=['tab:blue','tab:green','tab:orange']
@@ -70,7 +77,8 @@ def compare_profiles(plobject, probelist, hrange=(0,-1), fsize=14,
     # Create figure with two sub-plots on the same y-axis
     for ind, probe in enumerate(probelist):
         ax1.plot(probe.data['WEST'].values, probe.data['ALT(KM)'].values, color=colors[ind], label=probe.name)    
-    ax1.plot(vpcm_zmean, plobject.heights[:hrange[1]], color='k', linestyle='dashed', label='Venus PCM')
+    ax1.plot(vpcm_zmean60, plobject.heights[:hrange[1]], color='k', linestyle='dashed', label='Venus PCM, 60N')
+    ax1.plot(vpcm_zmean30, plobject.heights[:hrange[1]], color='r', linestyle='dashed', label='Venus PCM, 30N')
     ax1.set_title('Zonal wind', fontsize=fsize)
     ax1.set_xlabel('Zonal wind / m/s', fontsize=fsize)
     ax1.set_ylabel('Altitude / km', fontsize=fsize)
@@ -81,7 +89,9 @@ def compare_profiles(plobject, probelist, hrange=(0,-1), fsize=14,
                 probe.calc_omega()
             period_days = probe.period
             ax2.plot(period_days, probe.data['ALT(KM)'].values, color=colors[ind], label=probe.name)
-    ax2.plot(vpcm_period, plobject.heights[:hrange[1]], color='k', linestyle='dashed', label='Venus PCM')
+    ax2.plot(vpcm_period60, plobject.heights[:hrange[1]], color='k', linestyle='dashed', label='Venus PCM, 60N')
+    ax2.plot(vpcm_period30, plobject.heights[:hrange[1]], color='r', linestyle='dashed', label='Venus PCM, 30N')
+
     ax2.set_title('Rotation period of atmosphere', fontsize=fsize)
     ax2.set_xlabel('Rotation period / Earth days', fontsize=fsize)
     ax2.set_xscale('log')
@@ -95,16 +105,50 @@ def compare_profiles(plobject, probelist, hrange=(0,-1), fsize=14,
     else:
         plt.show()
 
-def compare_rossby(plobject, probelist, lat=64, hrange=(0,-1), trange=(0,-1)):
+# %%
+def compare_rossby(plobject, probelist, lat=64, hrange=(0,-1), trange=(0,-1),
+                   savearg=False, fsize=14, gmean=True,
+                   sformat='png', savename='fig3_radii.png'):
     """ Figure with single sub-plot:
         Rossby radius of deformation as a function of altitude for
         VPCM model output
         Pioneer Venus entry probe wind data                 """
     
-    L_vpcm = extratropical(plobject, lat, hrange, trange)
+    L_vpcm = extratropical(plobject, gmean=gmean, lat=lat, hrange=hrange, trange=trange)
     L_vpcm = L_vpcm/(plobject.radius*1000)
-    lambda_vpcm = tropical(plobject, hrange, trange)
+    lambda_vpcm = tropical(plobject, gmean=gmean, lat=lat, hrange=hrange, trange=trange)
     lambda_vpcm = lambda_vpcm/(plobject.radius*1000)
+
+    colors=['tab:blue','tab:green','tab:orange']
+    fig, ax = plt.subplots(figsize=(6,8))
+    for ind, probe in enumerate(probelist):
+            probe.calc_rossby_radii()
+            L_probe = probe.extra_r/(probe.radius*1000)
+            lambda_probe = probe.trop_r/(probe.radius*1000)
+            plt.plot(L_probe, probe.data['ALT(KM)'].values, 
+                         linestyle='dashed',
+                         color=colors[ind], label=probe.name+', extratropical')
+            plt.plot(lambda_probe, probe.data['ALT(KM)'].values, 
+                         color=colors[ind], label=probe.name+', tropical')
+    
+    plt.plot(L_vpcm, plobject.heights[hrange[0]:hrange[1]], 
+            color='r', linestyle='dashed', label='VPCM, extratropical')
+    plt.plot(lambda_vpcm, plobject.heights[hrange[0]:hrange[1]], 
+            color='r', label='VPCM, tropical')
+    plt.plot(np.ones_like(lambda_vpcm), 
+             plobject.heights[hrange[0]:hrange[1]],
+             color='k', linestyle='dotted',
+             label='Wavenumber=1')
+    plt.title('Meridional Rossby wavenumber', fontsize=fsize+2)
+    plt.ylabel('Height / km', fontsize=fsize)
+    plt.xlabel('Rossby wavenumber', fontsize=fsize)
+    plt.xscale('log')
+    plt.legend()
+    if savearg==True:
+        plt.savefig(savename, format=sformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
 
 # %%
 if __name__ == "__main__":
@@ -118,3 +162,7 @@ if __name__ == "__main__":
     compare_profiles(vpcm, pv_probes, hrange=(0,-1), fsize=14,
                      savearg=True, savename='fig2_profiles.png',
                      sformat='png')
+    
+    compare_rossby(vpcm, pv_probes, lat=80, hrange=(0,-1), 
+                   trange=(0,-1), fsize=14, savearg=False,
+                   savename='fig3_rossby.png', sformat='png')
