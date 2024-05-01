@@ -518,15 +518,15 @@ def alt_lon(plobject, key='eddy temp', time_slice=-1,
               are temp, eddy temp, div, eddy zeta.')
         
     fig, ax = plt.subplots(figsize=(6,6))
-    plt.contourf(plobject.lons, plobject.plevs[hmin:hmax]*0.01, 
+    plt.contourf(plobject.lons, plobject.heights[hmin:hmax], 
                  cube, 
-                 levels=levels,
+    #             levels=levels,
                  cmap=cols)
     plt.title(f'{key}, lat={plobject.lats[lat]}')
     plt.xlabel('Longitude [deg]')
     plt.ylabel('Pressure [mbar]')
-    ax.set_yscale('log')
-    plt.gca().invert_yaxis()
+#    ax.set_yscale('log')
+#    plt.gca().invert_yaxis()
     cbar = plt.colorbar()
     cbar.set_label(f'{cunit}')
     if save==True:
@@ -591,7 +591,7 @@ def hovmoeller(plobject, key='eddy temp', trange=(400,500),
         
     time_axis = np.arange(0,len(plobject.data['time_counter'][trange[0]:trange[1]]))   
     fig, ax = plt.subplots(figsize=(6,6))
-    plt.contourf(time_axis, plobject.plevs[hmin:hmax]*0.01, 
+    plt.contourf(time_axis, plobject.heights[hmin:hmax], 
                  cube.T, 
  #                levels=levels,
 #                 norm=TwoSlopeNorm(0),
@@ -599,8 +599,8 @@ def hovmoeller(plobject, key='eddy temp', trange=(400,500),
     plt.title(f'{key}, lat={plobject.lats[lat]}, lon={plobject.lons[lon]}')
     plt.xlabel('Time')
     plt.ylabel('Pressure [mbar]')
-    ax.set_yscale('log')
-    plt.gca().invert_yaxis()
+#    ax.set_yscale('log')
+#    plt.gca().invert_yaxis()
     cbar = plt.colorbar()
     cbar.set_label(f'{cunit}')
     if save==True:

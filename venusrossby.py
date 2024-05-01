@@ -1,6 +1,7 @@
 # %%
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import TwoSlopeNorm
 
 # %%
 def omega_profile(plobject, hrange=(0,-1), trange=(0,-1),
@@ -174,4 +175,22 @@ def plot_profiles(plobject, gmean=True, lat=64, hrange=(0,-1), trange=(0,-1),
         plt.show()
 
 
+# %%
+def eddy_geop(plobject, time_slice=-100, lev=22):
+    """ Plot eddy geopotential height for input model level"""
+
+    geop = plobject.data['geop'][time_slice,lev,:,:]
+    zonal_geop = np.mean(geop, axis=-1)
+    eddy_geop = geop - zonal_geop[:,np.newaxis]
+
+    fig, ax = plt.subplots(figsize=(8,5))
+    cf = ax.contourf(plobject.lons, plobject.lats, eddy_geop,
+                     cmap='coolwarm', norm=TwoSlopeNorm(0)
+                     )
+    cbar = plt.colorbar(cf, orientation='vertical')
+    ax.set_title('Eddy geopotential height')
+    ax.set_xlabel('Longitude / deg')
+    ax.set_ylabel('Latitude / deg')
+    plt.show()
+    
 # %%

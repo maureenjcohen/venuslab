@@ -31,7 +31,7 @@ def init_model_data(inpath):
     return plobject
 
 # %%
-def helm_panels(plobject, time_slice=-100, levs=[12,18,30], qscale=[0.1,1,2], 
+def helm_panels(plobject, time_slice=-100, levs=[12,20,30], qscale=[0.1,1,2], 
                 qmultiplier=0.5, n=3, fsize=14):
     """ Figure with 6 sub-figures, showing the wind vectors and Helmholtz decomp
         at 3 different altitude levels                                  """
@@ -42,6 +42,7 @@ def helm_panels(plobject, time_slice=-100, levs=[12,18,30], qscale=[0.1,1,2],
     temp = np.array([plobject.data['temp'][time_slice,lev,:,:] for lev in levs])
     pres = np.array([plobject.data['pres'][time_slice,lev,:,:] for lev in levs])
     w = -np.array((omega*temp*plobject.RCO2)/(pres*plobject.g))
+    geop = np.array([plobject.data['geop'][time_slice,lev,:,:] for lev in levs])
 
     eddy_us = []
     eddy_vs = []
@@ -51,19 +52,29 @@ def helm_panels(plobject, time_slice=-100, levs=[12,18,30], qscale=[0.1,1,2],
         eddy_v = v[lev,:,:] - np.mean(v[lev,:,:], axis=-1)[:,np.newaxis]
         eddy_us.append(eddy_u)
         eddy_vs.append(eddy_v)
+    # For first two panels, just calculate the eddy wind from the wind fields
+    # and append to list
 
-    winds = windspharm.standard.VectorWind(u[-1,:,:], v[-1,:,:], rsphere=plobject.radius*1000)
-        # Create a VectorWind data object from the x and y wind cubes
+    winds = windspharm.standard.VectorWind(np.flip(u[-1,:,:], axis=(0,1)), 
+                                           np.flip(v[-1,:,:], axis=(0,1)), 
+                                           rsphere=plobject.radius*1000)
+    # Create a VectorWind data object from the x and y wind cubes
     uchi, vchi, upsi, vpsi = winds.helmholtz(truncation=21)
 
     zonal_upsi = np.mean(upsi, axis=-1)
     zonal_vpsi = np.mean(vpsi, axis=-1)
-    print(zonal_vpsi.shape)
 
-    eddy_upsi = upsi - zonal_upsi[:,np.newaxis]
-    eddy_vpsi = vpsi - zonal_vpsi[:,np.newaxis]
+    eddy_upsi = np.flip(upsi - zonal_upsi[:,np.newaxis], axis=(0,1))
+    eddy_vpsi = np.flip(vpsi - zonal_vpsi[:,np.newaxis], axis=(0,1))
     eddy_us.append(eddy_upsi)
     eddy_vs.append(eddy_vpsi)
+    # For the third panel, first do the Helmholtz decomposition, then find
+    # the eddy rotational component and append to list
+
+    eddy_geops = []
+    for lev in range(0,len(levs)):
+        eddy_geop = geop[lev,:,:] - np.mean(geop[lev,:,:], axis=-1)[:,np.newaxis]
+        eddy_geops.append(eddy_geop)
 
     X, Y = np.meshgrid(plobject.lons, plobject.lats)
     fig, ax = plt.subplots(len(levs), 2, figsize=(12,12), sharex=True, sharey=False)
@@ -81,7 +92,7 @@ def helm_panels(plobject, time_slice=-100, levs=[12,18,30], qscale=[0.1,1,2],
         ax[i,0].set_ylabel('Latitude / deg', fontsize=fsize)
         if i == len(levs)-1:
             ax[i,0].set_xlabel('Longitude /deg', fontsize=fsize)
-        ax[i,0].set_title(f'{plot_labels[alph_i]}) Horiz. wind, h={np.round(plobject.heights[levs[i]],0)} km', fontsize=fsize-2)
+        ax[i,0].set_title(f'{plot_labels[alph_i]}) Horiz. wind, h={np.round(plobject.heights[levs[i]],0)} km', fontsize=fsize-4)
         cbar = plt.colorbar(cf, ax=ax[i,0])
         cbar.set_label('Vertical wind / m/s', loc='center')
         lat_ticks = ax[i,0].get_yticks()
@@ -90,16 +101,23 @@ def helm_panels(plobject, time_slice=-100, levs=[12,18,30], qscale=[0.1,1,2],
             title_str = 'Eddy rot. comp.'
         else:
             title_str = 'Eddy wind'
+
+        geop_cf = ax[i,1].contourf(plobject.lons, plobject.lats, eddy_geops[i],
+                                   alpha=0.5,
+                                   cmap='PuOr', extend='both', norm=TwoSlopeNorm(0))
         
         lev1_helm = ax[i,1].quiver(X[::n,::n], Y[::n,::n], eddy_us[i][::n,::n], eddy_vs[i][::n,::n],
                     angles='xy', scale_units='xy', scale=qscale[i]*qmultiplier)
         ax[i,1].quiverkey(lev1_helm, X=0.9, Y=1.05, U=qscale[i]*qmultiplier*10, label='%s m/s' %str(qscale[i]*qmultiplier*10),
                     labelpos='E', coordinates='axes')
-        ax[i,1].set_title(f'{plot_labels[alph_i+1]}) {title_str}, h={np.round(plobject.heights[levs[i]],0)} km', fontsize=fsize-2)
+        ax[i,1].set_title(f'{plot_labels[alph_i+1]}) {title_str}, h={np.round(plobject.heights[levs[i]],0)} km', fontsize=fsize-4)
         if i == len(levs)-1:
             ax[i,1].set_xlabel('Longitude / deg', fontsize=fsize)
         ax[i,1].set_yticks(lat_ticks[1:-1])
+        gbar = plt.colorbar(geop_cf, ax=ax[i,1])
+        gbar.set_label('Eddy geop. height / m', loc='center')
     
     plt.subplots_adjust(wspace=0.2)
     plt.show()
+
 # %%
