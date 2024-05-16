@@ -124,7 +124,7 @@ def divaltlon(plobject, lat, time_slice, hmin, hmax):
 
     fig, ax = plt.subplots(figsize=(8,6))
     cf = ax.contourf(plobject.lons, plobject.heights[hmin:hmax], div[:,lat,:],
-                    cmap='seismic', norm=TwoSlopeNorm(0))
+                    cmap='coolwarm', norm=TwoSlopeNorm(0))
     ax.set_title(f'Divergence, lat {np.round(plobject.lats[lat],0)}')
     ax.set_xlabel('Longitude / deg')
     ax.set_ylabel('Altitude / km')
