@@ -153,6 +153,39 @@ def compare_rossby(plobject, probelist, trop_lat=48, extra_lat=80,
         plt.show()
 
 # %%
+def allwaves(plobject, trange=(1300,1500), fsize=14,
+             hmin=12, hmax=40, lat=88, lon=48,
+             savearg=False, savename='fig4b_allwaves.png', sformat='png'):
+     
+    """ Hovmoeller plot of temperature anomaly as a function of height 
+    To show high-frequency waves, requires aoa_cloud.nc as input! """
+
+    air_temp = plobject.data['temp'][trange[0]:trange[1],hmin:hmax,lat,:]
+    zm_temp = np.mean(air_temp, axis=-1)
+    cube = air_temp - zm_temp[:,:,np.newaxis]
+    time_axis = np.arange(0,len(plobject.data['time_counter'][trange[0]:trange[1]]))   
+    time_axis = time_axis*(100/117)
+
+    fig, ax = plt.subplots(figsize=(6,6))
+    plt.contourf(time_axis, plobject.heights[hmin:hmax], 
+                 cube[:,:,lon].T, 
+                 levels=np.arange(-18,19,2),
+                 extend='both',
+                 norm=TwoSlopeNorm(0),
+                 cmap='coolwarm')
+    plt.title(f'b) Temperature anomaly, 0$^{{\circ}}$E/W x {int(np.round(plobject.lats[lat],0))}$^{{\circ}}$N',
+              fontsize=fsize)
+    plt.xlabel('Time / Earth days', fontsize=fsize)
+    plt.ylabel('Height / km', fontsize=fsize)
+    cbar = plt.colorbar()
+    cbar.set_label('K')
+    if savearg==True:
+        plt.savefig(savename, format=sformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
+
+# %%
 if __name__ == "__main__":
 
     vpcm = init_model_data(surfacepath)
@@ -169,3 +202,6 @@ if __name__ == "__main__":
                    trop_gmean=False, extra_gmean=False,
                    hrange=(0,-1), trange=(0,-1), fsize=14, savearg=False,
                    savename='fig3_rossby.png', sformat='png')
+    
+    allwaves(vpcm, savearg=False, savename='fig4b_temp_anomaly.png',
+             sformat='png')
