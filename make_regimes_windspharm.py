@@ -121,7 +121,7 @@ def helm_panels(plobject, time_slice=-100, levs=[12,20,30], qscale=[0.1,1,2],
     plt.show()
 
 # %%
-def vort_altlat(plobject, lon=48, time_slice=1728, hmin=12, hmax=35,
+def vort_altlat(plobject, lon=48, time_slice=1728, hmin=12, hmax=40,
                 fsize=14):
     """ Altitude-longitude plot of divergence"""
 
@@ -141,11 +141,11 @@ def vort_altlat(plobject, lon=48, time_slice=1728, hmin=12, hmax=35,
                      levels=np.arange(-1.6, 1.7, 0.1),
                      extend='both',
                      cmap='coolwarm', norm=TwoSlopeNorm(0))
-    ax.set_title(f'a) Eddy relative vorticity, lon. {int(np.round(plobject.lons[lon],0))}$^{{\circ}}$',
-                 fontsize=fsize+2)
+    ax.set_title(f'a) Eddy relative vorticity, {int(np.round(plobject.lons[lon],0))}$^{{\circ}}$E/W',
+                 fontsize=fsize)
     ax.set_xlabel('Latitude / deg', fontsize=fsize)
     ax.set_ylabel('Altitude / km', fontsize=fsize)
     cbar = plt.colorbar(cf, ax=ax)
-    cbar.set_label('X / s-1', loc='center')
+    cbar.set_label('Relative vorticity / $10^{-5}$ s-1', loc='center')
     plt.show()
 # %%
