@@ -61,8 +61,10 @@ class Probe:
         self.name = name # Name of probe, i.e. 'Day','Night','North'
         if name=='North':
             self.lat = 60
+            self.latstr = '$60^{\circ}$N'
         else:
             self.lat = 30
+            self.latstr = '$30^{\circ}$S'
 
         data = pd.read_csv(probepath, sep=',')
         self.data = data # Add DataFrame to object

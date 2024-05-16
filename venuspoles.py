@@ -456,15 +456,15 @@ def zonal_plot(plobject, key, meaning=True, time_slice=-1, hmin=25, hmax=49,
 
     zcube= np.mean(tcube, axis=-1)
     fig, ax = plt.subplots(figsize=(6,6))
-    plt.contourf(plobject.lats[latmin:latmax], plobject.plevs[hmin:hmax]*0.01, 
+    plt.contourf(plobject.lats[latmin:latmax], plobject.heights[hmin:hmax], 
                  zcube, 
 #                 levels=cubedict[key]['levels'],
                  cmap='hot')
     plt.title(cubedict[key]['title'])
     plt.xlabel('Latitude [deg]')
     plt.ylabel('Pressure [mbar]')
-    ax.set_yscale('log')
-    plt.gca().invert_yaxis()
+#    ax.set_yscale('log')
+#    plt.gca().invert_yaxis()
     cbar = plt.colorbar()
     cbar.set_label(cubedict[key]['unit'])
     if save==True:
@@ -594,11 +594,11 @@ def hovmoeller(plobject, key='eddy temp', trange=(400,500),
     plt.contourf(time_axis, plobject.heights[hmin:hmax], 
                  cube.T, 
  #                levels=levels,
-#                 norm=TwoSlopeNorm(0),
+                 norm=TwoSlopeNorm(0),
                  cmap=cols)
     plt.title(f'{key}, lat={plobject.lats[lat]}, lon={plobject.lons[lon]}')
     plt.xlabel('Time')
-    plt.ylabel('Pressure [mbar]')
+    plt.ylabel('Height [km]')
 #    ax.set_yscale('log')
 #    plt.gca().invert_yaxis()
     cbar = plt.colorbar()

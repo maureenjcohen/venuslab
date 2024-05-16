@@ -66,7 +66,7 @@ def compare_profiles(plobject, probelist, hrange=(0,-1), fsize=14,
     # Calculate mean zonal wind and atmospheric omega and rotation period at 60 N
     # for Venus PCM output
     vpcm_zmean30, vpcm_omega30, vpcm_period30 = omega_profile(plobject, hrange=hrange, 
-                                                        gmean=False, lat=64,
+                                                        gmean=False, lat=32,
                                                         plot=False, save=False)
     # Calculate mean zonal wind and atmospheric omega and rotation period at 60 N
     # for Venus PCM output
@@ -76,9 +76,9 @@ def compare_profiles(plobject, probelist, hrange=(0,-1), fsize=14,
     fig.suptitle('Venus PCM vs. Pioneer Venus entry probes', y=1.01, fontsize=fsize+6)
     # Create figure with two sub-plots on the same y-axis
     for ind, probe in enumerate(probelist):
-        ax1.plot(probe.data['WEST'].values, probe.data['ALT(KM)'].values, color=colors[ind], label=probe.name)    
-    ax1.plot(vpcm_zmean60, plobject.heights[:hrange[1]], color='k', linestyle='dashed', label='Venus PCM, 60N')
-    ax1.plot(vpcm_zmean30, plobject.heights[:hrange[1]], color='r', linestyle='dashed', label='Venus PCM, 30N')
+        ax1.plot(probe.data['WEST'].values, probe.data['ALT(KM)'].values, color=colors[ind], label=probe.name + ', ' + probe.latstr)    
+    ax1.plot(vpcm_zmean30, plobject.heights[:hrange[1]], color='r', linestyle='dashed', label='Venus PCM, $30^{\circ}$S')
+    ax1.plot(vpcm_zmean60, plobject.heights[:hrange[1]], color='k', linestyle='dashed', label='Venus PCM, $60^{\circ}$N')
     ax1.set_title('Zonal wind', fontsize=fsize)
     ax1.set_xlabel('Zonal wind / m/s', fontsize=fsize)
     ax1.set_ylabel('Altitude / km', fontsize=fsize)
@@ -88,9 +88,9 @@ def compare_profiles(plobject, probelist, hrange=(0,-1), fsize=14,
             if not hasattr(probe,'period_days'):
                 probe.calc_omega()
             period_days = probe.period
-            ax2.plot(period_days, probe.data['ALT(KM)'].values, color=colors[ind], label=probe.name)
-    ax2.plot(vpcm_period60, plobject.heights[:hrange[1]], color='k', linestyle='dashed', label='Venus PCM, 60N')
-    ax2.plot(vpcm_period30, plobject.heights[:hrange[1]], color='r', linestyle='dashed', label='Venus PCM, 30N')
+            ax2.plot(period_days, probe.data['ALT(KM)'].values, color=colors[ind], label=probe.name + ', ' + probe.latstr)
+    ax2.plot(vpcm_period30, plobject.heights[:hrange[1]], color='r', linestyle='dashed', label='Venus PCM, $30^{\circ}$S')
+    ax2.plot(vpcm_period60, plobject.heights[:hrange[1]], color='k', linestyle='dashed', label='Venus PCM, $60^{\circ}$N')
 
     ax2.set_title('Rotation period of atmosphere', fontsize=fsize)
     ax2.set_xlabel('Rotation period / Earth days', fontsize=fsize)
