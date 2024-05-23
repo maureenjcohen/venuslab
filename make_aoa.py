@@ -473,7 +473,7 @@ if __name__ == "__main__":
     wind_composites(simulations[0], savearg=True, sformat=saveas,
                     savename=outpath+'fig6_wind_composites.png')
     # Figure 7
-    time_series(simulations[0], key='vitw', 
+    time_series(simulations[0], key='vitw', frequnit=20.,
                 coords=[(16,86,48),(22,86,48),(30,86,48)], 
                 ptitle='vertical wind', ylab='Wind velocity', 
                 unit='m/s', plot=True, trange=[1777,1877], 

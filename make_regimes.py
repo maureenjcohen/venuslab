@@ -81,7 +81,7 @@ def compare_profiles(plobject, probelist, hrange=(0,-1), fsize=14,
     ax1.plot(vpcm_zmean60, plobject.heights[:hrange[1]], color='k', linestyle='dashed', label='Venus PCM, $60^{\circ}$N')
     ax1.set_title('Zonal wind', fontsize=fsize)
     ax1.set_xlabel('Zonal wind / m/s', fontsize=fsize)
-    ax1.set_ylabel('Altitude / km', fontsize=fsize)
+    ax1.set_ylabel('Height / km', fontsize=fsize)
     ax1.legend()
 
     for ind, probe in enumerate(probelist):
@@ -164,7 +164,7 @@ def allwaves(plobject, trange=(1300,1500), fsize=14,
     zm_temp = np.mean(air_temp, axis=-1)
     cube = air_temp - zm_temp[:,:,np.newaxis]
     time_axis = np.arange(0,len(plobject.data['time_counter'][trange[0]:trange[1]]))   
-    time_axis = time_axis*(100/117)
+    time_axis = time_axis*(117/100)
 
     fig, ax = plt.subplots(figsize=(6,6))
     plt.contourf(time_axis, plobject.heights[hmin:hmax], 

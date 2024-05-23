@@ -144,7 +144,7 @@ def vort_altlat(plobject, lon=48, time_slice=1728, hmin=12, hmax=40,
     ax.set_title(f'a) Eddy relative vorticity, {int(np.round(plobject.lons[lon],0))}$^{{\circ}}$E/W',
                  fontsize=fsize)
     ax.set_xlabel('Latitude / deg', fontsize=fsize)
-    ax.set_ylabel('Altitude / km', fontsize=fsize)
+    ax.set_ylabel('Height / km', fontsize=fsize)
     cbar = plt.colorbar(cf, ax=ax)
     cbar.set_label('Relative vorticity / $10^{-5}$ s-1', loc='center')
     plt.show()
