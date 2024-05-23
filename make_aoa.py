@@ -21,7 +21,7 @@ allbpaths = [balloon1, balloon2]
 # List of balloon data paths
 outpath = '/exomars/data/analysis/volume_8/mc5526/make_aoa/'
 # Where to send the plots
-saveas = 'png'
+saveas = 'eps'
 # What format to save the plots - png for viewing, eps for paper
 
 # Import packages
@@ -456,36 +456,36 @@ if __name__ == "__main__":
 
     # Figure 1
     baseline_atmosphere(simulations[0], trange=(0,-1), savearg=True,
-                        sformat=saveas, savename=outpath+'fig1_baseline.png')
+                        sformat=saveas, savename=outpath+'fig1_baseline.'+saveas)
     # Figure 2
     zonal_mean_aoa(simulations, savearg=True, sformat=saveas,
-                   savename=outpath+'fig2_zonalmean_aoa.png')
+                   savename=outpath+'fig2_zonalmean_aoa.'+saveas)
     # Figure 3
     aoa_profiles(simulations, savearg=True, sformat=saveas,
-                 savename=outpath+'fig3_profiles_aoa.png')
+                 savename=outpath+'fig3_profiles_aoa.'+saveas)
     # Figure 4
     polar_aoa(simulations[0], savearg=True, sformat=saveas,
-              savename=outpath+'fig4_polar_aoa.png')
+              savename=outpath+'fig4_polar_aoa.'+saveas)
     # Figure 5
     aoa_slices(simulations[0], savearg=True, sformat=saveas,
-               savename=outpath+'fig5_aoa_slices.png')
+               savename=outpath+'fig5_aoa_slices.'+saveas)
     # Figure 6
     wind_composites(simulations[0], savearg=True, sformat=saveas,
-                    savename=outpath+'fig6_wind_composites.png')
+                    savename=outpath+'fig6_wind_composites.'+saveas)
     # Figure 7
-    time_series(simulations[0], key='vitw', frequnit=20.,
+    time_series(simulations[0], key='vitw',
                 coords=[(16,86,48),(22,86,48),(30,86,48)], 
                 ptitle='vertical wind', ylab='Wind velocity', 
                 unit='m/s', plot=True, trange=[1777,1877], 
-                tunit='Venus days', savename=outpath+'fig7_wtimeseries.png',
+                tunit='Venus days', savename=outpath+'fig7_wtimeseries.'+saveas,
                 fsize=14, save=True, saveformat=saveas)
     # Figure 8
     timeseries_transform(simulations[0],key='vitw', fsize=14, plot_transform=True,
                          coords=[(16,86,48),(22,86,48),(30,86,48)],
                          trange=[1777,1877], save=True, saveformat=saveas,
-                         savename=outpath+'fig8_wfourier_transform.png')
+                         savename=outpath+'fig8_wfourier_transform.'+saveas)
     # Figure 9
     vega_series(balloons[0], balloons[1], simulations[0], savearg=True,
-                savename=outpath+'fig9_vega_series.png', sformat=saveas)
+                savename=outpath+'fig9_vega_series.'+saveas, sformat=saveas)
 
 # %%
