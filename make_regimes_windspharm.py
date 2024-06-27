@@ -91,7 +91,7 @@ def helm_panels(plobject, time_slice=-100, levs=[12,20,30], qscale=[0.1,1,2],
                     labelpos='E', coordinates='axes')
         ax[i,0].set_ylabel('Latitude / deg', fontsize=fsize)
         if i == len(levs)-1:
-            ax[i,0].set_xlabel('Longitude /deg', fontsize=fsize)
+            ax[i,0].set_xlabel('Longitude / deg', fontsize=fsize)
         ax[i,0].set_title(f'{plot_labels[alph_i]}) Horiz. wind, h={np.round(plobject.heights[levs[i]],0)} km', fontsize=fsize-4)
         cbar = plt.colorbar(cf, ax=ax[i,0])
         cbar.set_label('Vertical wind / m/s', loc='center')
