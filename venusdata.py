@@ -3,6 +3,7 @@
 # %%
 ## Import packages
 import netCDF4 as nc
+import xarray as xr
 import numpy as np
 
 # %%
@@ -41,21 +42,21 @@ class Planet:
         """ Loads a netCDF file using the netCDF4 package and stores in object
             Lists dictionary key, name, dimensions, and shape
             of each data cube and stores text in a reference list"""
-        ds = nc.Dataset(fn, 'r')
+        ds = xr.open_dataset(fn, decode_cf=False)
         reflist = []
         str1 = 'File contains:'
         print(str1)
         reflist.append(str1)
-        for key in ds.variables.keys():
-            if 'long_name' in ds.variables[key].ncattrs():
-                keystring = key + ': ' + ds.variables[key].long_name + ', ' + \
-                      str(ds.variables[key].dimensions) + ', ' + \
-                      str(ds.variables[key].shape)
+        for key in ds.data_vars:
+            if 'long_name' in ds[key].attrs:
+                keystring = key + ': ' + ds[key].long_name + ', ' + \
+                      str(ds[key].dims) + ', ' + \
+                      str(ds[key].shape)
                 print(keystring)
                 reflist.append(keystring)
             else:
-                keystring = key + ': ' + str(ds.variables[key].dimensions) + ', ' \
-                      + str(ds.variables[key].shape)
+                keystring = key + ': ' + str(ds[key].dims) + ', ' \
+                      + str(ds[key].shape)
                 print(keystring)
                 reflist.append(keystring)
         self.data = ds
@@ -76,10 +77,10 @@ class Planet:
         print('Resolution is ' +  str(len(self.data.variables['lat'][:])) + ' lat, '
               + str(len(self.data['lon'][:])) + ' lon, '
               + str(len(self.data.variables['presnivs'][:])) + ' height')
-        self.lons = np.round(self.data.variables['lon'][:])
-        self.lats = np.round(self.data.variables['lat'][:])
-        self.areas = self.data.variables['aire'][:]
-        self.plevs = self.data.variables['presnivs'][:]
+        self.lons = np.round(self.data.variables['lon'].values)
+        self.lats = np.round(self.data.variables['lat'].values)
+        self.areas = self.data.variables['aire'].values
+        self.plevs = self.data.variables['presnivs'].values
         self.tinterval = np.diff(self.data['time_counter'][0:2])[0]
         if len(self.data.variables['presnivs'][:]) == 50:
             self.heights = np.array(heights50)
@@ -94,9 +95,9 @@ class Planet:
         print('Resolution is ' +  str(len(self.data.variables['lat'][:])) + ' lat, '
               + str(len(self.data['lon'][:])) + ' lon, '
               + str(len(self.data.variables['presnivs'][:])) + ' height')
-        self.lons = np.round(self.data.variables['lon'][:])
-        self.lats = np.round(self.data.variables['lat'][:])
-        self.plevs = self.data.variables['presnivs'][:]
+        self.lons = np.round(self.data.variables['lon'].values)
+        self.lats = np.round(self.data.variables['lat'].values)
+        self.plevs = self.data.variables['presnivs'].values
         self.tinterval = np.diff(self.data['time_counter'][0:2])[0]
         if len(self.data.variables['presnivs'][:]) == 50:
             self.heights = np.array(heights50)
