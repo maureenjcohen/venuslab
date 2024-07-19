@@ -183,3 +183,25 @@ def animate_zm(inputarray, lats, hmin, hmax, heights, cmin, cmax, trange=(0,4499
             duration=0.5, loop=0)
 
 # %%
+def animate_akatsuki(snaps, savename='test.gif'):
+
+    ims = []
+    for snap in snaps:
+        fig = plt.figure(figsize=(8,6))
+        plt.contourf(snap['longitude'], snap['latitude'], snap['radiance'][0,:,:], levels=np.arange(-3,18,1), cmap='plasma')
+        plt.title(f'Akatsuki IR1 camera 0.9 um, {snap.time.values[0]}')
+        plt.xlabel('Longitude')
+        plt.ylabel('Latitude')
+        cb = plt.colorbar()
+        cb.set_label('mW/cm2/um/sr')
+
+        buf = io.BytesIO()
+        fig.savefig(buf, bbox_inches='tight')
+        buf.seek(0)
+        img = Image.open(buf)
+        img.show()
+        buf.close()
+        
+        ims.append(img)
+
+    ims[0].save(savename, save_all=True, append_images=ims[1:], optimize=False, duration=0.5, loop=0)
