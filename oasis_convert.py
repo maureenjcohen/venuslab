@@ -11,7 +11,9 @@ ukey = 'vitu' # U wind
 vkey = 'vitv' # V wind
 wkey = 'vitw' # W wind
 tkey = 'temp' # Air temp
-gkey = 'geop' # Geopotential height
+#gkey = 'geop' # Geopotential height
+pkey = 'pres' # Pressure
+rkey = 'rho' # Density
 tckey = 'time_counter' # Time counter
 
 # %%
