@@ -14,7 +14,7 @@ import numpy as np
 ## scale height in km
 venusdict = {'radius': 6051.3, 'g': 8.87, 'rotperiod' : 243.0, 
              'revperiod': 224.7, 'rotrate': 2.99e-07, 'psurf': 92.,
-             'molmass': 0.04344, 'RCO2' : 287.05, 'rhoconst': 65.,
+             'molmass': 0.04344, 'RCO2' : 188.92, 'rhoconst': 65.,
              'scaleh': 16.,
              'name': 'Venus'}
 ## Heights in km for 50-level sims
