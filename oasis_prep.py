@@ -9,6 +9,8 @@ import xarray as xr
 import iris
 from iris.experimental import stratify
 
+from venusdata import *
+
 # Part I:
 # %%
 cubes = ['/exomars/data/analysis/volume_6/mc5526/OASIS_high_res/pre.nc',
@@ -20,6 +22,7 @@ cubes = ['/exomars/data/analysis/volume_6/mc5526/OASIS_high_res/pre.nc',
 
 alts_cubes = '/exomars/data/analysis/volume_10/mc5526/OASIS_0.5onalts.nc'
 pres_cubes = '/exomars/data/analysis/volume_10/mc5526/OASIS_0.5onisobars.nc'
+theta_cubes = '/exomars/data/analysis/volume_10/mc5526/OASIS_0.5onisentropes.nc'
 
 # %%
 def merge_cubes(cubelist, outpath):
@@ -53,16 +56,22 @@ def interp_plevs(iris_cubes, plevs, outpath):
 
     new_cubes = []
     for cube in iris_cubes:
+        print(f'Interpolating {cube.long_name} cube')
         new_cube = stratify.relevel(cube, pcube, plevs, axis=1)
         new_cubes.append(new_cube)
+        print(f'{cube.long_name} added to new cube list')
 
     iris.save(new_cubes, outpath)
 
-    return
+    return new_cubes
+
 # %%
 def interp_isentropes(iris_cubes, thetalevs, outpath):
     """ Open Iris CubeList which is on pressure levels
         Interpolate all variables onto isentropes       """
+    
+    if thetalevs is None:
+        thetalevs = [283] + list(np.arange(290,980,10))
     
     for cube in iris_cubes:
         if cube.long_name == 'temperature':
@@ -70,14 +79,21 @@ def interp_isentropes(iris_cubes, thetalevs, outpath):
         if cube.long_name == 'pressure':
             pcube = cube.copy()    
     
-    p0 = iris.coords.AuxCoord(9308267, long_name='reference_pressure', units='Pa')
-    theta = temp*((p0/pcube)**(188/900)) # OASIS uses 188 for R and 900 for cp in J/K/kg
+    p0 = iris.coords.AuxCoord(100000, long_name='reference_pressure', units='Pa')
+    theta = temp*((p0/pcube)**(188/900))
+    theta.long_name = 'potential temperature'
+    theta.units = 'K'
 
     new_cubes = []
     for cube in iris_cubes:
+        print(f'Interpolating {cube.long_name} cube')
         new_cube = stratify.relevel(cube, theta, thetalevs, axis=1)
         new_cubes.append(new_cube)
+        print(f'{cube.long_name} added to new cube list')
 
     iris.save(new_cubes, outpath)
 
-    return
+    return new_cubes
+
+
+# %%
