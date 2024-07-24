@@ -65,8 +65,8 @@ def calc_w_bar(plobject, trange=[0,-1]):
     if not hasattr(plobject,'w_wind'):
         plobject.calc_w(trange=trange) # Get w in m/s
 
-    w_mean = np.mean(plobject.w_wind[trange[0]:trange[1],...], axis=0) # Time mean of w [m/s]
-    w_squared = w_mean**2
+    w_squared = np.mean(plobject.w_wind[trange[0]:trange[1],...]**2, axis=0) # Time mean of w [m/s]
+    #w_squared = w_mean**2
     w_bar = np.sum(w_squared*plobject.data['aire'][:], axis=(1,2))/plobject.area
     # Area-weighted global mean on levels 
 
