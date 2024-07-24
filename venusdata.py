@@ -14,7 +14,7 @@ import numpy as np
 ## scale height in km
 venusdict = {'radius': 6051.3, 'g': 8.87, 'rotperiod' : 243.0, 
              'revperiod': 224.7, 'rotrate': 2.99e-07, 'psurf': 92.,
-             'molmass': 0.04344, 'RCO2' : 188.92, 'rhoconst': 65.,
+             'molmass': 0.04401, 'R' : 8.3143, 'RCO2' : 188.92, 'rhoconst': 65.,
              'scaleh': 16.,
              'name': 'Venus'}
 ## Heights in km for 50-level sims188
@@ -144,12 +144,12 @@ class Planet:
 
     def calc_rho(self):
         """ Calculate density of atmosphere using ideal gas law approximation """
-        rho = (self.data['pres'][:]*self.molmass)/(8.31451*self.data['temp'][:])
+        rho = (self.data['pres'][:]*self.molmass)/(self.R*self.data['temp'][:])
         self.rho = rho
 
-    def calc_w(self, trange=[0,-1]):
+    def calc_w(self):
         """ Calculate vertical velocity in m/s from Pa/s. """
-        w_wind = -(self.data['vitw'][trange[0]:trange[-1]]*self.data['temp'][trange[0]:trange[-1]]*self.RCO2)/(self.data['pres'][trange[0]:trange[-1]]*self.g)
+        w_wind = -(self.data['vitw'][:]*self.data['temp'][:]*self.RCO2)/(self.data['pres'][:]*self.g)
         self.w_wind = w_wind
 
     def set_times(self):

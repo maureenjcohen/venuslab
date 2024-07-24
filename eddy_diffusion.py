@@ -45,11 +45,11 @@ def calc_t_c_so2(plobject):
     return tc_array
 
 # %%
-def calc_t_d(plobject, trange=[0,-1]):
+def calc_t_d(plobject):
     """ Horizontal advective dynamical timescale 
         Planetary radius divided by global long-term mean zonal wind """
     
-    u_mean = np.mean(plobject.data['vitu'][trange[0]:trange[1],...], axis=0) # Time mean of u
+    u_mean = np.mean(plobject.data['vitu'], axis=0) # Time mean of u
     u_bar = np.sum(u_mean*plobject.data['aire'][:], axis=(1,2))/plobject.area 
     # Area-weighted global mean on levels
 
@@ -59,15 +59,16 @@ def calc_t_d(plobject, trange=[0,-1]):
     return t_d
 
 # %%
-def calc_w_bar(plobject, trange=[0,-1]):
+def calc_w_bar(plobject):
     """ Global long-term mean of vertical wind squared on levels """
 
     if not hasattr(plobject,'w_wind'):
-        plobject.calc_w(trange=trange) # Get w in m/s
+        plobject.calc_w() # Get w in m/s
 
-    w_squared = np.mean(plobject.w_wind[trange[0]:trange[1],...]**2, axis=0) # Time mean of w [m/s]
+    w2 = plobject.w_wind**2
+    w_mean = np.mean(w2, axis=0) # Time mean of w^2 [m/s]
     #w_squared = w_mean**2
-    w_bar = np.sum(w_squared*plobject.data['aire'][:], axis=(1,2))/plobject.area
+    w_bar = np.sum(w_mean*plobject.data['aire'][:], axis=(1,2))/plobject.area
     # Area-weighted global mean on levels 
 
     return w_bar
@@ -126,7 +127,7 @@ def long(plobject, outpath, t_d, w_bar,
         return k_zz
 
 # %%
-def make_dataset(plobject, trange=[0,-1]):
+def make_dataset(plobject):
     """ Create dataset with eddy diffusivity for long-lived tracer
         and SO2                                     """
     
@@ -136,8 +137,8 @@ def make_dataset(plobject, trange=[0,-1]):
     
     df = pd.DataFrame(data=init_dict)
 
-    t_d = calc_t_d(plobject, trange=trange)
-    w_bar = calc_w_bar(plobject, trange=trange)
+    t_d = calc_t_d(plobject)
+    w_bar = calc_w_bar(plobject)
     t_c_so2 = calc_t_c_so2(plobject)
     kzz_long = long(plobject, outpath=None, t_d=t_d, 
                     w_bar=w_bar, save=False)
