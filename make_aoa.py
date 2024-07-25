@@ -19,7 +19,7 @@ balloon2 = '/exomars/data/analysis/volume_8/mc5526/vega_data/vg2bl_rdr.dat'
 # Vega balloon 2 data
 allbpaths = [balloon1, balloon2]
 # List of balloon data paths
-outpath = '/exomars/data/analysis/volume_8/mc5526/make_aoa/'
+outpath = '/exomars/data/analysis/volume_8/mc5526/make_aoa/revised_submission/'
 # Where to send the plots
 saveas = 'eps'
 # What format to save the plots - png for viewing, eps for paper
@@ -313,7 +313,7 @@ def aoa_slices(plobject, times=[1856,1858], levs=[15,22],
 
 # %%
 def wind_composites(plobject, times=[1856,1858], levs=[15,22],
-               fsize=14, qscale=1, n=4, clevs=np.arange(-0.06,0.07,0.01),
+               fsize=14, qscale=1, n=4, clevs=np.arange(-0.04,0.05,0.01),
                savearg=False, savename='fig6_wind_composites.png', 
                sformat='png'):
     """ Figure with four subplots showing two timesnaps for two different
@@ -403,8 +403,8 @@ def vega_series(bobject1, bobject2, plobject, fsize=14,
     vpcm_w = np.mean(plobject.w_wind[:,25,52,:],axis=0)
     # Mean VPCM vertical wind in m/s at h=54 km, lat=8 deg (position of Vega balloon 1)
     freq3 = 1./len(plobject.lons)
-    vpcm_background = bandpass(vpcm_w, frequnit=freq3, plot=False)
-
+    vpcm_background = bandpass(vpcm_w.values, frequnit=freq3, plot=False)
+   
     fig, ax = plt.subplots(3,1, figsize=(8,12))
     ax[0].plot(bobject1.data['Hours'], vega1_w, color='k', linestyle='dashed')
     ax[0].plot(bobject1.data['Hours'], vega1_background, color='r')
@@ -426,11 +426,11 @@ def vega_series(bobject1, bobject2, plobject, fsize=14,
 
     ax[2].plot(plobject.lons, vpcm_w, color='k')
     ax[2].plot(plobject.lons, vpcm_background, color='r')
-    ax[2].text(0.4,0.85,f'Background wind = {np.round(vpcm_background[0],3)} m/s', color='r', 
+    ax[2].text(0.4,0.85,f'Background wind = {vpcm_background[0]:.3f} m/s', color='r', 
                fontsize=fsize, transform=ax[2].transAxes)
     ax[2].set_xlabel('Longitude / deg', fontsize=fsize)
     ax[2].set_ylabel('Vertical wind / m/s', fontsize=fsize)
-    ax[2].set_ylim(0.,0.012)
+    ax[2].set_ylim(0.,0.010)
     ax[2].set_title('c) Venus PCM model output, 8 deg north, 54 km altitude', fontsize=fsize)
 
     fig.suptitle('Vertical winds measured by Vega compared to Venus PCM', y=0.9375, fontsize=fsize+2)
@@ -476,13 +476,13 @@ if __name__ == "__main__":
     time_series(simulations[0], key='vitw',
                 coords=[(16,86,48),(22,86,48),(30,86,48)], 
                 ptitle='vertical wind', ylab='Wind velocity', 
-                unit='m/s', plot=True, trange=[1777,1877], 
+                unit='m/s', plot=True, trange=[1777,1876], 
                 tunit='Venus days', savename=outpath+'fig7_wtimeseries.'+saveas,
                 fsize=14, save=True, saveformat=saveas)
     # Figure 8
     timeseries_transform(simulations[0],key='vitw', fsize=14, plot_transform=True,
                          coords=[(16,86,48),(22,86,48),(30,86,48)],
-                         trange=[1777,1877], save=True, saveformat=saveas,
+                         trange=[1777,1876], save=True, saveformat=saveas,
                          savename=outpath+'fig8_wfourier_transform.'+saveas)
     # Figure 9
     vega_series(balloons[0], balloons[1], simulations[0], savearg=True,

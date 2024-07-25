@@ -1,5 +1,5 @@
 """ Uses functions from venuslab to auto-generate plots for
-    'An altitude-dependent circulation regime change in the Venus atmosphere',
+    'Three worlds in one: Venus as a natural laboratory' etc.,
      Cohen et al. 2024                                       """
 
 """ Usage from command line: python make_regimes.py
@@ -16,7 +16,7 @@ from venusdata import *
 
 import numpy as np
 import matplotlib.pyplot as plt
-import netCDF4 as nc
+#import netCDF4 as nc
 import windspharm
 from matplotlib.colors import TwoSlopeNorm
 

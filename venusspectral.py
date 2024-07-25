@@ -10,7 +10,7 @@ from venusdyn import time_series
 def timeseries_transform(plobject, key='vitw', fsize=14, plot_transform=True,
                          frequnit=1./20,
                          coords=[(16,86,48),(22,86,48),(30,86,48)],
-                         trange=[1777,1877], save=False, saveformat='png',
+                         trange=[1777,1876], save=False, saveformat='png',
                          savename='fourier_transform.png'):
     """ Perform Fourier transform of a time series 
         Plot power spectral density against frequency
@@ -25,11 +25,12 @@ def timeseries_transform(plobject, key='vitw', fsize=14, plot_transform=True,
                 unit='filler', plot=False, trange=trange, 
                 tunit='filler',
                 fsize=14, save=False, saveformat='png')
+
     if plot_transform==True: 
         fig, ax = plt.subplots(figsize=(8,6))
         colors=['tab:blue','tab:green','tab:orange']
         for ind, item in enumerate(series_list):
-            fft = sp.fftpack.fft(item)
+            fft = sp.fftpack.fft(item.values)
             psd = np.abs(fft)**2
             freqs = sp.fft.fftfreq(len(fft),d=frequnit)
             i = freqs > 0
@@ -54,6 +55,7 @@ def bandpass(datarray, frequnit=1, plot=True):
     """ Perform Fourier transform of 1-D input array
         Plot PSDs
         Remove all frequencies except background """
+    
     fft = sp.fftpack.fft(datarray)
     psd = np.abs(fft)**2
     freqs = sp.fft.fftfreq(len(fft),d=frequnit)

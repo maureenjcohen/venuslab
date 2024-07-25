@@ -355,13 +355,14 @@ def time_series(plobject, key, coords, ptitle, ylab, unit,
             temp = plobject.data['temp'][trange[0]:trange[1],coord[0],coord[1],coord[2]]
             pres = plobject.data['pres'][trange[0]:trange[1],coord[0],coord[1],coord[2]]
             cube = -(cube*temp*plobject.RCO2)/(pres*plobject.g)
-            series_list.append(cube)
+    
+        series_list.append(cube)
 
-            alt_lab = np.round(plobject.heights[coord[0]],0)
-            lat_lab = plobject.lats[coord[1]]
-            lon_lab = plobject.lons[coord[2]]
-            labs = np.array([alt_lab, lat_lab, lon_lab])
-            coords_list.append(labs)
+        alt_lab = np.round(plobject.heights[coord[0]],0)
+        lat_lab = plobject.lats[coord[1]]
+        lon_lab = plobject.lons[coord[2]]
+        labs = np.array([alt_lab, lat_lab, lon_lab])
+        coords_list.append(labs)
     print(coords_list)
     if plot==True:
         fig, ax = plt.subplots(figsize=(8,6))

@@ -2,7 +2,7 @@
 
 # %%
 ## Import packages
-import netCDF4 as nc
+#import netCDF4 as nc
 import xarray as xr
 import numpy as np
 
