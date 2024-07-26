@@ -23,6 +23,7 @@ heights50 = [0.00, 0.03, 0.12, 0.32, 0.68, 1.23, 2.03, 3.10, 4.50, 6.23, 8.35,
                46.9, 49.5, 51.9, 54.1, 56.2, 58.1, 60.1, 61.9, 63.7, 65.5, 67.2,
                68.8, 70.5, 72.2, 73.8, 75.5, 77.1, 78.7, 80.2, 81.8, 83.3, 84.8,
                86.2, 87.8, 90.1, 92.9, 94.9, 101.]
+isentropes70 = [283] + list(np.arange(290,980,10))
 
 ### Planet class object definition ###
 ### Manages planet configuration data and simulation output data.
@@ -31,9 +32,11 @@ heights50 = [0.00, 0.03, 0.12, 0.32, 0.68, 1.23, 2.03, 3.10, 4.50, 6.23, 8.35,
 class Planet:
     """ A Planet object which contains the output data for a simulation"""
     
-    def __init__(self, planetdict):
+    def __init__(self, planetdict, model, run):
         """ Initiates a Planet object using the input dictionary of planet constants"""
         self.name = planetdict['name']
+        self.model = model
+        self.run = run
         print(f'Welcome to Venus. Your lander will melt in 57 minutes.')
         for key, value in planetdict.items():
             setattr(self, key, value)
@@ -71,40 +74,51 @@ class Planet:
         """ Prints reference list for easy formatted oversight of file contents"""
         print(*self.reflist, sep='\n')
 
-    def set_resolution(self):
+    def set_resolution(self, run='lmd'):
         """ Automatically detects file resolution and assigns aesthetically
         pleasing coordinate arrays to object for use in labelling plots"""
-        print('Resolution is ' +  str(len(self.data.variables['lat'][:])) + ' lat, '
-              + str(len(self.data['lon'][:])) + ' lon, '
-              + str(len(self.data.variables['presnivs'][:])) + ' height')
-        self.lons = np.round(self.data.variables['lon'].values)
-        self.lats = np.round(self.data.variables['lat'].values)
-        self.areas = self.data.variables['aire'].values
-        self.plevs = self.data.variables['presnivs'].values
-        self.tinterval = np.diff(self.data['time_counter'][0:2])[0]
-        if len(self.data.variables['presnivs'][:]) == 50:
-            self.heights = np.array(heights50)
-        else:
-            print('Altitude in km not available')
+        if run=='lmd':
+            self.lons = np.round(self.data.variables['lon'].values)
+            self.lats = np.round(self.data.variables['lat'].values)
+            self.areas = self.data.variables['aire'].values
+            self.levs = self.data.variables['presnivs'].values
+            self.vert = len(self.levs)
+            self.vert_unit = 'Pa'
+            self.vert_axis = 'Pressure'
+            self.tinterval = np.diff(self.data['time_counter'][0:2])[0]
+            if len(self.data.variables['presnivs'][:]) == 50:
+                self.heights = np.array(heights50)
+            else:
+                print('Altitude in km not available')
+        elif run=='isentropes':
+            self.lats = self.data['lat'].values
+            self.lons = self.data['lon'].values
+            self.levs = self.data['dim1'].values
+            self.vert = len(self.levs)
+            self.vert_unit = 'K'
+            self.vert_axis = 'Potential temperature'
+            self.tinterval = np.diff(self.data['time_counter'][0:2].values)[0]
+        elif run=='onalts':
+            self.lats = self.data['lat'].values
+            self.lons = self.data['lon'].values
+            self.levs = self.data['presnivs'].values
+            self.vert = len(self.levs)
+            self.vert_unit = 'm'
+            self.vert_axis = 'Height'
+            self.tinterval = np.diff(self.data['time_counter'][0:2].values)[0]
+        elif run=='isobars':
+            self.lats = self.data['lat'].values
+            self.lons = self.data['lon'].values
+            self.levs = self.data['pres'].values
+            self.vert = len(self.levs)
+            self.vert_unit = 'Pa'
+            self.vert_axis = 'Pressure'
+            self.tinterval = np.diff(self.data['time_counter'][0:2].values)[0]
 
-    def load_oasis(self, fn):
-        """ Load file and run set resolution for OASIS data reformatted
-            to use LMD-style metadata """
-        self.load_file(fn)
-
-        print('Resolution is ' +  str(len(self.data.variables['lat'][:])) + ' lat, '
-              + str(len(self.data['lon'][:])) + ' lon, '
-              + str(len(self.data.variables['presnivs'][:])) + ' height')
-        self.lons = np.round(self.data.variables['lon'].values)
-        self.lats = np.round(self.data.variables['lat'].values)
-        self.plevs = self.data.variables['presnivs'].values
-        self.tinterval = np.diff(self.data['time_counter'][0:2])[0]
-        if len(self.data.variables['presnivs'][:]) == 50:
-            self.heights = np.array(heights50)
-        else:
-            print('Altitude in km not available')
-
-        self.area_weights()
+        print('Resolution is ' +  str(len(self.lats)) + ' lat, '
+        + str(len(self.lons)) + ' lon, '
+        + str(self.vert) + ' levels')
+        print('Vertical coordinate is ' + str(self.vert_axis).lower())
 
     def area_weights(self):
         """ Calculate area weights if not included in output, e.g. for OASIS data"""
@@ -134,13 +148,18 @@ class Planet:
         """ Formula LMDZ Venus uses for potential temperature to account for
         specific heat capacity varying with height.
         See Lebonnois et al 2010.   """
-        if not hasattr(self, 'cp'):
-            self.calc_cp()
-        p0 = np.max(self.data['psol'][:])
-        theta_v = (self.data['temp'][:]**self.v0 +
-                   self.v0*(self.T0**self.v0)*(np.log((p0/self.data['pres'][:])**(self.RCO2/self.cp0))))
-        theta = theta_v**(1/self.v0)
-        self.theta = theta
+        if self.model=='lmd':
+            if not hasattr(self, 'cp'):
+                self.calc_cp()
+            p0 = 100000
+            theta_v = (self.data['temp'][:]**self.v0 +
+                    self.v0*(self.T0**self.v0)*(np.log((p0/self.data['pres'][:])**(self.RCO2/self.cp0))))
+            theta = theta_v**(1/self.v0)
+            self.theta = theta
+        elif self.model=='oasis':
+            p0=100000
+            theta = self.data['temp']*((p0/self.data['pres'])**(self.RCO2/900))
+            self.theta
 
     def calc_rho(self):
         """ Calculate density of atmosphere using ideal gas law approximation """
@@ -159,10 +178,15 @@ class Planet:
 
     def total_area(self):
         """ Calculate total surface area in m2"""
-        self.area = np.sum(self.data['aire'][:])
+        if self.model=='lmd':
+            self.area = np.sum(self.data['aire'][:])
+        elif self.model=='oasis':
+            self.area = np.sum(self.areas)
 
-    def setup(self):
-        self.set_resolution()
+    def setup(self, run='lmd'):
+        self.set_resolution(run=run)
+        if self.model=='oasis':
+            self.area_weights()
         self.total_area()
 
 # %%
