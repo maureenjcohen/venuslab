@@ -88,8 +88,8 @@ class Planet:
         if self.model=='vpcm':
             self.lons = np.round(self.data.variables['lon'].values)
             self.lats = np.round(self.data.variables['lat'].values)
-            self.areas = self.data.variables['aire'].values
             self.tinterval = np.diff(self.data['time_counter'][0:2])[0]
+            self.areas = self.data.variables['aire'].values
             if len(self.data.variables['presnivs'][:]) == 50:
                 self.heights = np.array(heights50)
             else:
@@ -99,32 +99,21 @@ class Planet:
             self.lats = self.data['lat'].values
             self.tinterval = np.diff(self.data['time_counter'][0:2].values)[0]
             self.area_weights()
-
-        print('Resolution is ' +  str(len(self.lats)) + ' lat, '
-        + str(len(self.lons)) + ' lon')
+        
+        self.set_vertical()
+        print('Resolution is ' +  str(len(self.lats)) + ' lats, '
+        + str(len(self.lons)) + ' lons, ' + str(self.vert) + ' levs')
+        print(f'Vertical axis is {self.vert_axis}')
 
     def set_vertical(self):
         """ Identify and set vertical axis and units """
-        if self.model=='vpcm':
-            self.levs = self.data.variables['presnivs'].values
-            self.vert = len(self.levs)
-            self.vert_unit = 'Pa'
-            self.vert_axis = 'Pressure'
-        elif self.model=='oasis' and self.run=='isentropes':            
-            self.levs = self.data['dim1'].values
-            self.vert = len(self.levs)
-            self.vert_unit = 'K'
-            self.vert_axis = 'Potential temperature'
-        elif self.model=='oasis' and self.run=='altitudes':
+        self.levs = self.data['presnivs'].values
+        self.vert = len(self.levs)
+        self.vert_unit = self.data['presnivs'].units
+        self.vert_axis = self.data['presnivs'].long_name
+        if self.model=='oasis' and self.run=='altitudes':
             self.levs = self.data['presnivs'].values*1e3
-            self.vert = len(self.levs)
             self.vert_unit = 'km'
-            self.vert_axis = 'Height'
-        elif self.model=='oasis' and self.run=='isobars':
-            self.levs = self.data['pres'].values
-            self.vert = len(self.levs)
-            self.vert_unit = 'Pa'
-            self.vert_axis = 'Pressure'
 
     def area_weights(self):
         """ Calculate area weights if not included in output, e.g. for OASIS data"""
@@ -165,7 +154,7 @@ class Planet:
         elif self.model=='oasis':
             p0 = 100000
             theta = self.data['temp']*((p0/self.data['pres'])**(self.RCO2/900))
-            self.theta
+            self.theta = theta
 
     def calc_rho(self):
         """ Calculate density of atmosphere using ideal gas law approximation """
