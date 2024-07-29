@@ -33,13 +33,21 @@ class Planet:
     """ A Planet object which contains the output data for a simulation"""
     
     def __init__(self, planetdict, model, run):
-        """ Initiates a Planet object using the input dictionary of planet constants"""
-        self.name = planetdict['name']
-        self.model = model
-        self.run = run
+        """ Initiates a Planet object using the input dictionary of planet constants,
+        the name of the model, and the name of the run. 
+        Model names: vpcm or oasis
+        Run names: isentropes, isobars, or altitudes """
+
+        self.name = planetdict['name'] # dictionary
+        self.model = model # string
+        self.run = run # string
         print(f'Welcome to Venus. Your lander will melt in 57 minutes.')
+        print(f'This is the {self.run} dataset created by {self.model.upper()}')
         for key, value in planetdict.items():
             setattr(self, key, value)
+
+    def identify(self):
+        print(f'This is the {self.run} dataset created by {self.model.upper()}')
 
     def load_file(self, fn):
         """ Loads a netCDF file using the netCDF4 package and stores in object
@@ -74,51 +82,49 @@ class Planet:
         """ Prints reference list for easy formatted oversight of file contents"""
         print(*self.reflist, sep='\n')
 
-    def set_resolution(self, run='lmd'):
+    def set_resolution(self):
         """ Automatically detects file resolution and assigns aesthetically
         pleasing coordinate arrays to object for use in labelling plots"""
-        if run=='lmd':
+        if self.model=='vpcm':
             self.lons = np.round(self.data.variables['lon'].values)
             self.lats = np.round(self.data.variables['lat'].values)
             self.areas = self.data.variables['aire'].values
-            self.levs = self.data.variables['presnivs'].values
-            self.vert = len(self.levs)
-            self.vert_unit = 'Pa'
-            self.vert_axis = 'Pressure'
             self.tinterval = np.diff(self.data['time_counter'][0:2])[0]
             if len(self.data.variables['presnivs'][:]) == 50:
                 self.heights = np.array(heights50)
             else:
                 print('Altitude in km not available')
-        elif run=='isentropes':
-            self.lats = self.data['lat'].values
+        elif self.model=='oasis':
             self.lons = self.data['lon'].values
+            self.lats = self.data['lat'].values
+            self.tinterval = np.diff(self.data['time_counter'][0:2].values)[0]
+            self.area_weights()
+
+        print('Resolution is ' +  str(len(self.lats)) + ' lat, '
+        + str(len(self.lons)) + ' lon')
+
+    def set_vertical(self):
+        """ Identify and set vertical axis and units """
+        if self.model=='vpcm':
+            self.levs = self.data.variables['presnivs'].values
+            self.vert = len(self.levs)
+            self.vert_unit = 'Pa'
+            self.vert_axis = 'Pressure'
+        elif self.model=='oasis' and self.run=='isentropes':            
             self.levs = self.data['dim1'].values
             self.vert = len(self.levs)
             self.vert_unit = 'K'
             self.vert_axis = 'Potential temperature'
-            self.tinterval = np.diff(self.data['time_counter'][0:2].values)[0]
-        elif run=='onalts':
-            self.lats = self.data['lat'].values
-            self.lons = self.data['lon'].values
-            self.levs = self.data['presnivs'].values
+        elif self.model=='oasis' and self.run=='altitudes':
+            self.levs = self.data['presnivs'].values*1e3
             self.vert = len(self.levs)
-            self.vert_unit = 'm'
+            self.vert_unit = 'km'
             self.vert_axis = 'Height'
-            self.tinterval = np.diff(self.data['time_counter'][0:2].values)[0]
-        elif run=='isobars':
-            self.lats = self.data['lat'].values
-            self.lons = self.data['lon'].values
+        elif self.model=='oasis' and self.run=='isobars':
             self.levs = self.data['pres'].values
             self.vert = len(self.levs)
             self.vert_unit = 'Pa'
             self.vert_axis = 'Pressure'
-            self.tinterval = np.diff(self.data['time_counter'][0:2].values)[0]
-
-        print('Resolution is ' +  str(len(self.lats)) + ' lat, '
-        + str(len(self.lons)) + ' lon, '
-        + str(self.vert) + ' levels')
-        print('Vertical coordinate is ' + str(self.vert_axis).lower())
 
     def area_weights(self):
         """ Calculate area weights if not included in output, e.g. for OASIS data"""
@@ -134,7 +140,7 @@ class Planet:
         self.dx = dx
 
     def calc_cp(self):
-        """ Formula LMDZ Venus uses to vary the specific heat with temperature"""
+        """ Formula VPCM uses to vary the specific heat with temperature"""
         cp0 = 1000 # J/kg/K
         T0 = 460 # K
         v0 = 0.35 # exponent
@@ -145,10 +151,10 @@ class Planet:
         self.v0 = v0
 
     def calc_theta(self):
-        """ Formula LMDZ Venus uses for potential temperature to account for
+        """ Formula VPCM uses for potential temperature to account for
         specific heat capacity varying with height.
         See Lebonnois et al 2010.   """
-        if self.model=='lmd':
+        if self.model=='vpcm':
             if not hasattr(self, 'cp'):
                 self.calc_cp()
             p0 = 100000
@@ -157,7 +163,7 @@ class Planet:
             theta = theta_v**(1/self.v0)
             self.theta = theta
         elif self.model=='oasis':
-            p0=100000
+            p0 = 100000
             theta = self.data['temp']*((p0/self.data['pres'])**(self.RCO2/900))
             self.theta
 
@@ -178,15 +184,13 @@ class Planet:
 
     def total_area(self):
         """ Calculate total surface area in m2"""
-        if self.model=='lmd':
+        if self.model=='vpcm':
             self.area = np.sum(self.data['aire'][:])
         elif self.model=='oasis':
             self.area = np.sum(self.areas)
 
-    def setup(self, run='lmd'):
-        self.set_resolution(run=run)
-        if self.model=='oasis':
-            self.area_weights()
+    def setup(self):
+        self.set_resolution()
         self.total_area()
 
 # %%
