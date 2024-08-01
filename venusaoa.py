@@ -2,10 +2,76 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
-
+from scipy.optimize import curve_fit
+from scipy.signal import savgol_filter
 
 # %%
-def ageline(plobject, coords=(-0., -0.), sourcelev=22, line_lev=30, trange=(4000,4499),
+def smoothed_age(plobject, coords=(-0., -0.), linelev=30, 
+                 trange=(0,1876), plot=True):
+    
+    """ Plot age of air time series and smoothed time series on """
+    
+    line_lat = np.where(plobject.lats==coords[0])[0][0]
+    line_lon = np.where(plobject.lons==coords[1])[0][0]
+    print(line_lat, line_lon)
+    ageo = plobject.data['age'][trange[0]:trange[1],linelev,line_lat,line_lon]
+    ageo = ageo/(60*60*24*360)
+    filtered = savgol_filter(ageo, 500, 1) # Savitzy-Golay filter
+    filtered_grad = savgol_filter(np.gradient(filtered), 500, 1) # Do it again to the gradient
+    filtered_second = savgol_filter(np.gradient(filtered_grad), 500, 1)
+    time_axis = np.arange(0, ageo.shape[0])*plobject.tinterval/(60*60*24*360)
+
+    if plot==True:
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 6), sharex=True)
+        fig.suptitle(f'Age of air convergence at {plobject.heights[linelev]} km',
+                     fontsize=14)
+
+        ax1.plot(time_axis, ageo, color='b', label='Age of air')
+        ax1.plot(time_axis, filtered, color='r', label='Smoothed')
+        ax1.set_title('Age of air')
+        ax1.legend()
+        ax1.set_xlabel('Simulation time / Earth years')
+        ax1.set_ylabel('Age of air / Earth years')
+
+        ax2.plot(time_axis, filtered_grad, color='g')
+        ax2.set_title('Gradient of age of air')
+        ax2.set_xlabel('Simulation time / Earth years')
+        ax2.set_ylabel('Change per year')
+
+        ax3.plot(time_axis, filtered_second, color='m')
+        ax3.set_title('Second gradient of age of air')
+        ax3.set_xlabel('Simulation time / Earth years')
+        ax3.set_ylabel('Change in gradient per year')
+
+        plt.show()
+
+    return filtered, filtered_grad   
+
+# %%
+def ageline_fit(x, a, b):
+    return a*(1 - (np.exp(-b*x)))
+
+# %%
+def plot_fits(plobject, coords=(-0., -0.), linelev=30, 
+              trange=(0,1876)):
+    
+    smoothed, smoothed_grad = smoothed_age(plobject=plobject, coords=coords,
+                                           linelev=linelev, trange=trange,
+                                           plot=False)
+    time_axis = np.arange(0, smoothed.shape[0])*(plobject.tinterval/(60*60*24*360))
+    popt, pcov = curve_fit(ageline_fit, time_axis, smoothed)
+
+    plt.plot(time_axis, smoothed, color='b', label='Smoothed data')
+    plt.plot(time_axis, ageline_fit(time_axis, *popt), color='r',
+             label='Fit: a=%5.3f, b=%5.3f' % tuple(popt))
+    plt.legend()
+    plt.xlabel('Simulation time / Earth years')
+    plt.ylabel('Age of air / Earth years')
+    plt.title('%s km data fit to $a(1 - e^{-bt})$' % plobject.heights[linelev])
+    plt.show()
+
+# %%
+def ageline(plobject, coords=(-0., -0.), sourcelev=22, linelev=30, trange=(4000,4499),
             convert2yr=False, fractional=False,
             save=False, saveformat='png', savename='age_line.png'):
 
@@ -28,8 +94,8 @@ def ageline(plobject, coords=(-0., -0.), sourcelev=22, line_lev=30, trange=(4000
 
     fig, ax = plt.subplots(figsize=(6,6))
     plt.plot(ageo[:,sourcelev], color='b', label=f'h={plobject.heights[sourcelev]} km')
-    plt.plot(ageo[:,line_lev], color='r', label=f'h={plobject.heights[line_lev]} km')
-    plt.title(f'Age of air at h={plobject.heights[line_lev]} km, \
+    plt.plot(ageo[:,linelev], color='r', label=f'h={plobject.heights[linelev]} km')
+    plt.title(f'Age of air at h={plobject.heights[linelev]} km, \
               lat={plobject.lats[line_lat]}, \
               lon={plobject.lons[line_lon]}')
     plt.xlabel('Simulation time')
@@ -40,6 +106,8 @@ def ageline(plobject, coords=(-0., -0.), sourcelev=22, line_lev=30, trange=(4000
         plt.close()
     else:
         plt.show()
+
+    return ageo
 
 # %%
 def tracerline(plobject, coords=(-0., -0.), sourcelev=22, line_lev=30, trange=(4000,4499),
