@@ -40,6 +40,8 @@ from matplotlib.colors import TwoSlopeNorm
 from scipy.integrate import cumtrapz
 import netCDF4 as nc
 import cartopy.crs as ccrs
+from scipy.optimize import curve_fit
+from scipy.signal import savgol_filter
 
 # %%
 def init_data(pathlist):
@@ -442,6 +444,111 @@ def vega_series(bobject1, bobject2, plobject, fsize=14,
     else:
         plt.show()
 
+# %%
+def convergence(plobjects, cloud_lev=49, surf_lev=8, surf_lev2=22, 
+                lat=48, fsize=14):
+    """ 6 panel figure illustrating convergence of Cloud sim in top 3 panels
+        and progress towards convergence of Surface sim in bottom 3 panels"""
+
+    surface = np.mean(plobjects[0].data['age'][:-1,surf_lev,lat,:], axis=-1)/(60*60*24*360)
+    surface2 = np.mean(plobjects[0].data['age'][:-1,surf_lev2,lat,:], axis=-1)/(60*60*24*360)
+    cloud = np.mean(plobjects[1].data['age'][:,cloud_lev,lat,:], axis=-1)/(60*60*24*360)
+
+    surf_filtered = savgol_filter(surface, 500, 1)
+    surf_filtered2 = savgol_filter(surface2, 500, 1)
+    cloud_filtered = savgol_filter(cloud, 500, 1)
+    surf_grad = savgol_filter(np.gradient(surf_filtered), 500, 1)
+    surf_grad2 = savgol_filter(np.gradient(surf_filtered2), 500, 1)
+    cloud_grad = savgol_filter(np.gradient(cloud_filtered), 500, 1)
+    surf_axis = np.arange(0, surf_filtered.shape[0])*plobjects[0].tinterval/(60*60*24*360)
+    cloud_axis = np.arange(0, cloud_filtered.shape[0])*plobjects[1].tinterval/(60*60*24*360)
+
+    surf_popt, surf_pcov = curve_fit(ageline_fit, surf_axis, surf_filtered)
+    surf_popt2, surf_pcov2 = curve_fit(ageline_fit, surf_axis, surf_filtered2)
+    cloud_popt, cloud_pcov = curve_fit(ageline_fit, cloud_axis, cloud_filtered)
+
+    fig, ax = plt.subplots(3, 3, figsize=(12, 9))
+    ax[0,0].plot(surf_axis, surface, color='b', label='Raw data')
+    ax[0,0].plot(surf_axis, surf_filtered, color='r', label='Smoothed data')
+    ax[0,0].set_title(f'Surface simulation, h={plobjects[0].heights[surf_lev]} km',
+                    fontsize=fsize)
+    ax[0,0].set_ylabel('Age of air / Earth years')
+    ax[0,0].legend(fontsize=10)
+
+    ax[0,1].plot(surf_axis, surf_grad, color='g')
+    ax[0,1].plot(surf_axis, np.zeros_like(surf_axis), color='r', linestyle='dashed')
+    ax[0,1].set_title('Gradient of age of air', fontsize=fsize)
+    ax[0,1].set_ylabel('Change per year')
+
+    ax[0,2].plot(surf_axis, surf_filtered, color='b', label='Smoothed data')
+    ax[0,2].plot(surf_axis, ageline_fit(surf_axis, *surf_popt), color='r',
+                label='Fit: a=%5.3f, b=%5.3f' % tuple(surf_popt))
+    ax[0,2].set_title('Data fit to $a(1 - e^{-bt})$', fontsize=fsize)
+    ax[0,2].set_ylabel('Age of air / Earth years')
+    ax[0,2].legend(fontsize=10)
+
+    ax[1,0].plot(surf_axis, surface2, color='b', label='Raw data')
+    ax[1,0].plot(surf_axis, surf_filtered2, color='r', label='Smoothed data')
+    ax[1,0].set_title(f'Surface simulation, h={plobjects[0].heights[surf_lev2]} km',
+            fontsize=fsize)
+    ax[1,0].set_ylabel('Age of air / Earth years')
+    ax[1,0].legend(fontsize=10)
+
+    ax[1,1].plot(surf_axis, surf_grad2, color='g')
+    ax[1,1].plot(surf_axis, np.zeros_like(surf_axis), color='r', linestyle='dashed')
+    ax[1,1].set_ylabel('Change per year')
+
+    ax[1,2].plot(surf_axis, surf_filtered2, color='b', label='Smoothed data')
+    ax[1,2].plot(surf_axis, ageline_fit(surf_axis, *surf_popt2), color='r',
+                label='Fit: a=%5.3f, b=%5.3f' % tuple(surf_popt2))
+    ax[1,2].set_ylabel('Age of air / Earth years')
+    ax[1,2].legend(fontsize=10)
+
+    ax[2,0].plot(cloud_axis, cloud, color='b', label='Raw data')
+    ax[2,0].plot(cloud_axis, cloud_filtered, color='r', label='Smoothed data')
+    ax[2,0].set_title(f'Cloud simulation, h={plobjects[1].heights[cloud_lev]} km',
+                    fontsize=fsize)
+    ax[2,0].set_xlabel('Time / Earth years')
+    ax[2,0].set_ylabel('Age of air / Earth years')
+    ax[2,0].legend(fontsize=10)
+    ax[2,0].set_yticks([0.0, 0.5, 1.0, 1.5])
+
+    ax[2,1].plot(cloud_axis, cloud_grad, color='g')
+    ax[2,1].plot(cloud_axis, np.zeros_like(cloud_axis), color='r', linestyle='dashed')
+    ax[2,1].set_xlabel('Time / Earth years')
+    ax[2,1].set_ylabel('Change per year')
+
+    ax[2,2].plot(cloud_axis, cloud_filtered, color='b', label='Smoothed data')
+    ax[2,2].plot(cloud_axis, ageline_fit(cloud_axis, *cloud_popt), color='r',
+                label='Fit: a=%5.3f, b=%5.3f' % tuple(cloud_popt))
+    ax[2,2].set_xlabel('Time / Earth years')
+    ax[2,2].set_ylabel('Age of air / Earth years')
+    ax[2,2].legend(fontsize=10)
+    ax[2,2].set_yticks([0.0, 0.5, 1.0, 1.5])
+
+    plt.subplots_adjust(wspace=0.3, hspace=0.4)
+
+    plt.show()
+
+# %%
+def zonal_mean_gradients(plobject):
+    """ Make zonal mean plot showing age of air gradient of each gridbox for final output
+        In other words, how to close to zero gradient (=convergence) is each gridbox? """
+
+    surface = np.mean(plobject.data['age'][:-2,:,:,:], axis=-1)/(60*60*24*360)
+    surface_smoothed = savgol_filter(surface, 500, 1, axis=0)
+    surface_grad = np.gradient(surface_smoothed, axis=0)
+
+    fig, ax = plt.subplots(figsize=(6,6))
+    cf = ax.contourf(plobject.lats, plobject.heights, surface_grad[-1,:,:], 
+                    levels=np.arange(0.0,0.013,0.001),
+                    cmap='cividis')
+    ax.set_title('Zonal mean gradient of age of air')
+    ax.set_xlabel('Latitude / deg')
+    ax.set_ylabel('Height / km')
+    cbar = plt.colorbar(cf, orientation='vertical')
+    cbar.set_label('Change per year')
+    plt.show()
 
 
 # %%
@@ -487,5 +594,8 @@ if __name__ == "__main__":
     # Figure 9
     vega_series(balloons[0], balloons[1], simulations[0], savearg=True,
                 savename=outpath+'fig9_vega_series.'+saveas, sformat=saveas)
+
+    convergence(simulations, cloud_lev=49, surf_lev=8, surf_lev2=22, 
+                lat=48, fsize=14)
 
 # %%
