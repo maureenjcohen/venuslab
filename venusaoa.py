@@ -48,8 +48,8 @@ def smoothed_age(plobject, coords=(-0., -0.), linelev=30,
     return filtered, filtered_grad   
 
 # %%
-def ageline_fit(x, a, b):
-    return a*(1 - (np.exp(-b*x)))
+def ageline_fit(x, a, tau):
+    return a*(1 - (np.exp(-x/tau)))
 
 # %%
 def plot_fits(plobject, coords=(-0., -0.), linelev=30, 

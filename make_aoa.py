@@ -44,13 +44,14 @@ from scipy.optimize import curve_fit
 from scipy.signal import savgol_filter
 
 # %%
-def init_data(pathlist):
+def init_data(pathlist, names):
     """ Instantiates a Venus Planet object for each 
         dataset in a list of filepaths          """
 
     plobjects = []
     for path in pathlist:
-        plobject = Planet(venusdict)
+        ind = pathlist.index(path)
+        plobject = Planet(venusdict, 'vpcm', names[ind])
         plobject.load_file(path)
         plobject.setup()
         plobjects.append(plobject)
@@ -88,6 +89,8 @@ def baseline_atmosphere(plobject, trange=(-10,-1), fsize=14,
                  -zonal_mean_wind, extend='both',
                  levels=np.arange(-120,40,10),
                  cmap='RdBu', norm=TwoSlopeNorm(0))
+    ax1.plot(plobject.lats, np.ones_like(plobject.lats)*plobject.heights[22], 'g--', linewidth=2.5)
+    ax1.plot(plobject.lats, np.ones_like(plobject.lats)*plobject.heights[1], 'm--', linewidth=2.5)
     ax1.set_title('a) Zonal mean zonal wind', fontsize=fsize)
     ax1.set_xlabel('Latitude / deg', fontsize=fsize)
     ax1.set_ylabel('Height / km', fontsize=fsize)
@@ -99,6 +102,8 @@ def baseline_atmosphere(plobject, trange=(-10,-1), fsize=14,
                 mass_streamfunction, colors='black',
                 levels=np.arange(-100,100,10))
     ax2.clabel(cs, cs.levels, inline=True)
+    ax2.plot(plobject.lats, np.ones_like(plobject.lats)*plobject.heights[22], 'g--', linewidth=2.5)
+    ax2.plot(plobject.lats, np.ones_like(plobject.lats)*plobject.heights[1], 'm--', linewidth=2.5)
     ax2.set_title('b) Mean meridional mass streamfunction / $10^{10}$ kg/s',
                   fontsize=fsize)
     ax2.set_xlabel('Latitude / deg', fontsize=fsize)
@@ -122,6 +127,7 @@ def zonal_mean_aoa(plobjects, time_slice=-2, fsize=14,
 
     surface = np.mean(plobjects[0].data['age'][time_slice,:,:,:], axis=-1)/(60*60*24*360)
     cloud = np.mean(plobjects[1].data['age'][time_slice,:,:,:], axis=-1)/(60*60*24*360)
+    mass_streamfunction_surface = psi_m(plobjects[0], trange=(0,-2), plot=False)
 
     fig, ax = plt.subplots(2, 2, figsize=(12,8), 
                            gridspec_kw={'height_ratios': [1,0.5],
@@ -133,6 +139,10 @@ def zonal_mean_aoa(plobjects, time_slice=-2, fsize=14,
     surf_full = ax[0,0].contourf(plobjects[0].lats, plobjects[0].heights,
                                  surface, levels=np.arange(0,29,2), 
                                  cmap='cividis', extend='both')
+    cs_surf = ax[0,0].contour(plobjects[0].lats, plobjects[0].heights[:-1],
+            mass_streamfunction_surface, colors='black', alpha=0.5,
+            levels=np.arange(-100,100,10))
+    ax[0,0].clabel(cs_surf, cs_surf.levels, inline=True)
     ax[0,0].set_title('a) Surface tracer', fontsize=fsize)
     ax[0,0].set_ylabel('Height / km', fontsize=fsize)
     cbar1 = plt.colorbar(surf_full, ax=ax[0,0], orientation='vertical')
@@ -141,6 +151,10 @@ def zonal_mean_aoa(plobjects, time_slice=-2, fsize=14,
     cloud_full = ax[0,1].contourf(plobjects[1].lats, plobjects[1].heights,
                                   cloud, levels=np.arange(0,5.5,0.5), 
                                   cmap='cividis', extend='both')
+    cs_cloud = ax[0,1].contour(plobjects[1].lats, plobjects[1].heights[:-1],
+            mass_streamfunction_surface, colors='black', alpha=0.5,
+            levels=np.arange(-100,100,10))
+    ax[0,1].clabel(cs_cloud, cs_cloud.levels, inline=True)
     ax[0,1].set_title('b) Cloud deck tracer', fontsize=fsize)
     cbar2 = plt.colorbar(cloud_full, ax=ax[0,1], orientation='vertical')
     cbar2.ax.set_title('years')
@@ -148,6 +162,10 @@ def zonal_mean_aoa(plobjects, time_slice=-2, fsize=14,
     surf_zoom = ax[1,0].contourf(plobjects[0].lats, plobjects[0].heights[13:38],
                                  surface[13:38], levels=np.arange(16,29,1), 
                                  cmap='cividis', extend='both')
+    cs_surf_zoom = ax[1,0].contour(plobjects[0].lats, plobjects[0].heights[13:38],
+            mass_streamfunction_surface[13:38], colors='black', alpha=0.5,
+            levels=np.arange(-100,100,10))
+    ax[1,0].clabel(cs_surf_zoom, cs_surf_zoom.levels, inline=True)
     ax[1,0].set_title('c) Detail, 20-80 km', fontsize=fsize)
     ax[1,0].set_ylabel('Height / km', fontsize=fsize)
     ax[1,0].set_xlabel('Latitude / deg', fontsize=fsize)
@@ -157,6 +175,10 @@ def zonal_mean_aoa(plobjects, time_slice=-2, fsize=14,
     cloud_zoom = ax[1,1].contourf(plobjects[1].lats, plobjects[1].heights[25:50],
                                   cloud[25:50], levels=np.arange(0,1.6,0.2), 
                                   cmap='cividis', extend='both')
+    cs_surf_cloud = ax[1,1].contour(plobjects[1].lats, plobjects[1].heights[25:50],
+            mass_streamfunction_surface[24:50], colors='black', alpha=0.5,
+            levels=np.arange(-100,100,10))
+    ax[1,1].clabel(cs_surf_cloud, cs_surf_cloud.levels, inline=True)
     ax[1,1].set_title('d) Detail, 50-100 km', fontsize=fsize)
     ax[1,1].set_xlabel('Latitude / deg', fontsize=fsize)
     cbar3 = plt.colorbar(cloud_zoom, ax=ax[1,1], orientation='vertical', aspect=10)
@@ -270,12 +292,16 @@ def aoa_slices(plobject, times=[1856,1858], levs=[15,22],
         levels with horizontal wind vectors and vertical wind as contourfill"""
     
     surface = plobject.data['age'][times[0]:times[1]+1,levs[0]:levs[1]+1,:,:]/(60*60*24*360)
+    geop_mean = np.mean(plobject.data['geop'], axis=0)
+    geop = plobject.data['geop'][times[0]:times[1]+1,levs[0]:levs[1]+1,:,:] - geop_mean
 
     fig, ax = plt.subplots(2, 2, figsize=(12,8), sharex=True, sharey=True)
 
     cf1 = ax[0,0].contourf(plobject.lons, plobject.lats, surface[0,0,:,:],
                      levels=np.arange(16.5,22.5,0.25), 
                      extend='both', cmap='cividis')
+    cs1 = ax[0,0].contour(plobject.lons, plobject.lats, geop[0,0,:,:], colors='black', alpha=0.5)
+    ax[0,0].clabel(cs1, cs1.levels, inline=True)
     ax[0,0].set_ylabel('Latitude / deg', fontsize=fsize)
     ax[0,0].set_title(f'a) h={np.round(plobject.heights[levs[0]],0)} km, day 0', fontsize=fsize)
     cbar1 = plt.colorbar(cf1, orientation='vertical', fraction=0.05)
@@ -284,6 +310,8 @@ def aoa_slices(plobject, times=[1856,1858], levs=[15,22],
     cf2 = ax[0,1].contourf(plobject.lons, plobject.lats,surface[-1,0,:,:],
                      levels=np.arange(16.5,22.5,0.25), 
                      extend='both', cmap='cividis')
+    cs2 = ax[0,1].contour(plobject.lons, plobject.lats, geop[-1,0,:,:], colors='black', alpha=0.5)
+    ax[0,1].clabel(cs2, cs2.levels, inline=True)
     ax[0,1].set_title(f'b) h={np.round(plobject.heights[levs[0]],0)} km, day 12', fontsize=fsize)
     cbar2 = plt.colorbar(cf2, orientation='vertical', fraction=0.05)
     cbar2.set_label(f'years', loc='center')
@@ -291,6 +319,8 @@ def aoa_slices(plobject, times=[1856,1858], levs=[15,22],
     cf3 = ax[1,0].contourf(plobject.lons, plobject.lats, surface[0,-1,:,:],
                      levels=np.arange(23.5,27,0.25), 
                      extend='both', cmap='cividis')
+    cs3 = ax[1,0].contour(plobject.lons, plobject.lats, geop[0,-1,:,:], colors='black', alpha=0.5)
+    ax[1,0].clabel(cs3, cs3.levels, inline=True)
     cbar3 = plt.colorbar(cf3, orientation='vertical', fraction=0.05)
     cbar3.set_label(f'years', loc='center')
     ax[1,0].set_ylabel('Latitude / deg', fontsize=fsize)
@@ -300,12 +330,14 @@ def aoa_slices(plobject, times=[1856,1858], levs=[15,22],
     cf4 = ax[1,1].contourf(plobject.lons, plobject.lats, surface[-1,-1,:,:],
                      levels=np.arange(23.5,27,0.25), 
                      extend='both', cmap='cividis')
+    cs4 = ax[1,1].contour(plobject.lons, plobject.lats, geop[-1,-1,:,:], colors='black', alpha=0.5)
+    ax[1,1].clabel(cs4, cs4.levels, inline=True)
     cbar4 = plt.colorbar(cf4, orientation='vertical', fraction=0.05)
     cbar4.set_label(f'years', loc='center')
     ax[1,1].set_xlabel('Longitude / deg', fontsize=fsize)
     ax[1,1].set_title(f'd) h={np.round(plobject.heights[levs[-1]],0)} km, day 12', fontsize=fsize)
 
-    fig.suptitle('Age of air in the deep atmosphere', fontsize=fsize+2, y=0.95)
+    fig.suptitle('Age of air and geopotential height anomaly in the deep atmosphere', fontsize=fsize+2, y=0.95)
 
     if savearg==True:
         plt.savefig(savename, format=sformat, bbox_inches='tight')
@@ -445,90 +477,124 @@ def vega_series(bobject1, bobject2, plobject, fsize=14,
         plt.show()
 
 # %%
-def convergence(plobjects, cloud_lev=49, surf_lev=8, surf_lev2=22, 
-                lat=48, fsize=14):
+def convergence(plobjects, cloud_lev=49, surf_lev=8, surf_lev2=18, surf_lev3=22, 
+                lat=48, fsize=14, savearg=False, savename='convergence.png', sformat='png'):
     """ 6 panel figure illustrating convergence of Cloud sim in top 3 panels
         and progress towards convergence of Surface sim in bottom 3 panels"""
 
     surface = np.mean(plobjects[0].data['age'][:-1,surf_lev,lat,:], axis=-1)/(60*60*24*360)
     surface2 = np.mean(plobjects[0].data['age'][:-1,surf_lev2,lat,:], axis=-1)/(60*60*24*360)
+    surface3 = np.mean(plobjects[0].data['age'][:-1,surf_lev3,lat,:], axis=-1)/(60*60*24*360)
     cloud = np.mean(plobjects[1].data['age'][:,cloud_lev,lat,:], axis=-1)/(60*60*24*360)
 
     surf_filtered = savgol_filter(surface, 500, 1)
     surf_filtered2 = savgol_filter(surface2, 500, 1)
+    surf_filtered3 = savgol_filter(surface3, 500, 1)
     cloud_filtered = savgol_filter(cloud, 500, 1)
     surf_grad = savgol_filter(np.gradient(surf_filtered), 500, 1)
     surf_grad2 = savgol_filter(np.gradient(surf_filtered2), 500, 1)
+    surf_grad3 = savgol_filter(np.gradient(surf_filtered3), 500, 1)
     cloud_grad = savgol_filter(np.gradient(cloud_filtered), 500, 1)
     surf_axis = np.arange(0, surf_filtered.shape[0])*plobjects[0].tinterval/(60*60*24*360)
     cloud_axis = np.arange(0, cloud_filtered.shape[0])*plobjects[1].tinterval/(60*60*24*360)
 
     surf_popt, surf_pcov = curve_fit(ageline_fit, surf_axis, surf_filtered)
     surf_popt2, surf_pcov2 = curve_fit(ageline_fit, surf_axis, surf_filtered2)
+    surf_popt3, surf_pcov3 = curve_fit(ageline_fit, surf_axis, surf_filtered3)
     cloud_popt, cloud_pcov = curve_fit(ageline_fit, cloud_axis, cloud_filtered)
 
-    fig, ax = plt.subplots(3, 3, figsize=(12, 9))
+    leg_loc = 'lower right'
+
+    fig, ax = plt.subplots(4, 3, figsize=(15, 9))
     ax[0,0].plot(surf_axis, surface, color='b', label='Raw data')
     ax[0,0].plot(surf_axis, surf_filtered, color='r', label='Smoothed data')
-    ax[0,0].set_title(f'Surface simulation, h={plobjects[0].heights[surf_lev]} km',
+    ax[0,0].set_title(f'a) Surface simulation, h={plobjects[0].heights[surf_lev]} km',
                     fontsize=fsize)
-    ax[0,0].set_ylabel('Age of air / Earth years')
-    ax[0,0].legend(fontsize=10)
+    ax[0,0].set_ylabel('Age of air / years')
+    ax[0,0].legend(fontsize=10, loc=leg_loc)
 
     ax[0,1].plot(surf_axis, surf_grad, color='g')
     ax[0,1].plot(surf_axis, np.zeros_like(surf_axis), color='r', linestyle='dashed')
-    ax[0,1].set_title('Gradient of age of air', fontsize=fsize)
+    ax[0,1].set_title('b) Gradient of age of air', fontsize=fsize)
     ax[0,1].set_ylabel('Change per year')
 
-    ax[0,2].plot(surf_axis, surf_filtered, color='b', label='Smoothed data')
-    ax[0,2].plot(surf_axis, ageline_fit(surf_axis, *surf_popt), color='r',
-                label='Fit: a=%5.3f, b=%5.3f' % tuple(surf_popt))
-    ax[0,2].set_title('Data fit to $a(1 - e^{-bt})$', fontsize=fsize)
-    ax[0,2].set_ylabel('Age of air / Earth years')
-    ax[0,2].legend(fontsize=10)
+    ax[0,2].plot(surf_axis, surf_filtered, color='r', label='Smoothed data')
+    ax[0,2].plot(surf_axis, ageline_fit(surf_axis, *surf_popt), 'k--',
+                label=r'Fit: a=%5.3f, $\tau$=%5.3f' % tuple(surf_popt))
+    ax[0,2].set_title(r'c) Data fit to $a(1 - e^{-t/\tau})$', fontsize=fsize)
+    ax[0,2].set_ylabel('Age of air / years')
+    ax[0,2].legend(fontsize=10, loc=leg_loc)
 
     ax[1,0].plot(surf_axis, surface2, color='b', label='Raw data')
     ax[1,0].plot(surf_axis, surf_filtered2, color='r', label='Smoothed data')
-    ax[1,0].set_title(f'Surface simulation, h={plobjects[0].heights[surf_lev2]} km',
+    ax[1,0].set_title(f'd) Surface simulation, h={plobjects[0].heights[surf_lev2]} km',
             fontsize=fsize)
-    ax[1,0].set_ylabel('Age of air / Earth years')
-    ax[1,0].legend(fontsize=10)
+    ax[1,0].set_ylabel('Age of air / years')
+    ax[1,0].legend(fontsize=10, loc=leg_loc)
 
     ax[1,1].plot(surf_axis, surf_grad2, color='g')
     ax[1,1].plot(surf_axis, np.zeros_like(surf_axis), color='r', linestyle='dashed')
+    ax[1,1].set_title('e)', fontsize=fsize)
     ax[1,1].set_ylabel('Change per year')
 
-    ax[1,2].plot(surf_axis, surf_filtered2, color='b', label='Smoothed data')
-    ax[1,2].plot(surf_axis, ageline_fit(surf_axis, *surf_popt2), color='r',
-                label='Fit: a=%5.3f, b=%5.3f' % tuple(surf_popt2))
-    ax[1,2].set_ylabel('Age of air / Earth years')
-    ax[1,2].legend(fontsize=10)
+    ax[1,2].plot(surf_axis, surf_filtered2, color='r', label='Smoothed data')
+    ax[1,2].plot(surf_axis, ageline_fit(surf_axis, *surf_popt2), 'k--',
+                label=r'Fit: a=%5.3f, $\tau$=%5.3f' % tuple(surf_popt2))
+    ax[1,2].set_title('f)', fontsize=fsize)
+    ax[1,2].set_ylabel('Age of air / years')
+    ax[1,2].legend(fontsize=10, loc=leg_loc)
 
-    ax[2,0].plot(cloud_axis, cloud, color='b', label='Raw data')
-    ax[2,0].plot(cloud_axis, cloud_filtered, color='r', label='Smoothed data')
-    ax[2,0].set_title(f'Cloud simulation, h={plobjects[1].heights[cloud_lev]} km',
-                    fontsize=fsize)
-    ax[2,0].set_xlabel('Time / Earth years')
-    ax[2,0].set_ylabel('Age of air / Earth years')
-    ax[2,0].legend(fontsize=10)
-    ax[2,0].set_yticks([0.0, 0.5, 1.0, 1.5])
+    ax[2,0].plot(surf_axis, surface3, color='b', label='Raw data')
+    ax[2,0].plot(surf_axis, surf_filtered3, color='r', label='Smoothed data')
+    ax[2,0].set_title(f'g) Surface simulation, h={plobjects[0].heights[surf_lev3]} km',
+            fontsize=fsize)
+    ax[2,0].set_ylabel('Age of air / years')
+    ax[2,0].legend(fontsize=10, loc=leg_loc)
 
-    ax[2,1].plot(cloud_axis, cloud_grad, color='g')
-    ax[2,1].plot(cloud_axis, np.zeros_like(cloud_axis), color='r', linestyle='dashed')
-    ax[2,1].set_xlabel('Time / Earth years')
+    ax[2,1].plot(surf_axis, surf_grad3, color='g')
+    ax[2,1].plot(surf_axis, np.zeros_like(surf_axis), color='r', linestyle='dashed')
+    ax[2,1].set_title('h)', fontsize=fsize)
     ax[2,1].set_ylabel('Change per year')
 
-    ax[2,2].plot(cloud_axis, cloud_filtered, color='b', label='Smoothed data')
-    ax[2,2].plot(cloud_axis, ageline_fit(cloud_axis, *cloud_popt), color='r',
-                label='Fit: a=%5.3f, b=%5.3f' % tuple(cloud_popt))
-    ax[2,2].set_xlabel('Time / Earth years')
-    ax[2,2].set_ylabel('Age of air / Earth years')
-    ax[2,2].legend(fontsize=10)
-    ax[2,2].set_yticks([0.0, 0.5, 1.0, 1.5])
+    ax[2,2].plot(surf_axis, surf_filtered3, color='r', label='Smoothed data')
+    ax[2,2].plot(surf_axis, ageline_fit(surf_axis, *surf_popt3), 'k--',
+                label=r'Fit: a=%5.3f, $\tau$=%5.3f' % tuple(surf_popt3))
+    ax[2,2].set_title('i)', fontsize=fsize)
+    ax[2,2].set_ylabel('Age of air / years')
+    ax[2,2].legend(fontsize=10, loc=leg_loc)
+
+    ax[3,0].plot(cloud_axis, cloud, color='b', label='Raw data')
+    ax[3,0].plot(cloud_axis, cloud_filtered, color='r', label='Smoothed data')
+    ax[3,0].set_title(f'j) Cloud simulation, h={plobjects[1].heights[cloud_lev]} km',
+                    fontsize=fsize)
+    ax[3,0].set_xlabel('Time / years')
+    ax[3,0].set_ylabel('Age of air / years')
+    ax[3,0].legend(fontsize=10, loc=leg_loc)
+    ax[3,0].set_yticks([0.0, 0.5, 1.0, 1.5])
+
+    ax[3,1].plot(cloud_axis, cloud_grad, color='g')
+    ax[3,1].plot(cloud_axis, np.zeros_like(cloud_axis), color='r', linestyle='dashed')
+    ax[3,1].set_title('k)', fontsize=fsize)
+    ax[3,1].set_xlabel('Time / years')
+    ax[3,1].set_ylabel('Change per year')
+
+    ax[3,2].plot(cloud_axis, cloud_filtered, color='r', label='Smoothed data')
+    ax[3,2].plot(cloud_axis, ageline_fit(cloud_axis, *cloud_popt), 'k--',
+                label=r'Fit: a=%5.3f, $\tau$=%5.3f' % tuple(cloud_popt))
+    ax[3,2].set_title('l)', fontsize=fsize)
+    ax[3,2].set_xlabel('Time / years')
+    ax[3,2].set_ylabel('Age of air / years')
+    ax[3,2].legend(fontsize=10, loc=leg_loc)
+    ax[3,2].set_yticks([0.0, 0.5, 1.0, 1.5])
 
     plt.subplots_adjust(wspace=0.3, hspace=0.4)
+    fig.align_ylabels(ax)
 
-    plt.show()
+    if savearg==True:
+        plt.savefig(savename, format=sformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
 
 # %%
 def zonal_mean_gradients(plobject):
@@ -554,7 +620,7 @@ def zonal_mean_gradients(plobject):
 # %%
 if __name__ == "__main__":
 
-    simulations = init_data(allpaths)
+    simulations = init_data(allpaths, names=['surface', 'cloud'])
     # Instantiate data objects used in plots
     # List item 1 is Surface, List item 2 is Cloud
     balloons = init_balloons(allbpaths)
@@ -564,38 +630,41 @@ if __name__ == "__main__":
     # Figure 1
     baseline_atmosphere(simulations[0], trange=(0,-1), savearg=True,
                         sformat=saveas, savename=outpath+'fig1_baseline.'+saveas)
+    
     # Figure 2
-    zonal_mean_aoa(simulations, savearg=True, sformat=saveas,
-                   savename=outpath+'fig2_zonalmean_aoa.'+saveas)
+    convergence(simulations, cloud_lev=49, surf_lev=8, surf_lev2=18, surf_lev3=22,
+                lat=48, fsize=14, savearg=True, savename=outpath+'fig2_convergence.'+saveas, 
+                sformat=saveas)
     # Figure 3
-    aoa_profiles(simulations, savearg=True, sformat=saveas,
-                 savename=outpath+'fig3_profiles_aoa.'+saveas)
+    zonal_mean_aoa(simulations, savearg=True, sformat=saveas,
+                   savename=outpath+'fig3_zonalmean_aoa.'+saveas)
     # Figure 4
-    polar_aoa(simulations[0], savearg=True, sformat=saveas,
-              savename=outpath+'fig4_polar_aoa.'+saveas)
+    aoa_profiles(simulations, savearg=True, sformat=saveas,
+                 savename=outpath+'fig4_profiles_aoa.'+saveas)
     # Figure 5
-    aoa_slices(simulations[0], savearg=True, sformat=saveas,
-               savename=outpath+'fig5_aoa_slices.'+saveas)
+    polar_aoa(simulations[0], savearg=True, sformat=saveas,
+              savename=outpath+'fig5_polar_aoa.'+saveas)
     # Figure 6
-    wind_composites(simulations[0], savearg=True, sformat=saveas,
-                    savename=outpath+'fig6_wind_composites.'+saveas)
+    aoa_slices(simulations[0], savearg=True, sformat=saveas,
+               savename=outpath+'fig6_aoa_slices.'+saveas)
     # Figure 7
+    wind_composites(simulations[0], savearg=True, sformat=saveas,
+                    savename=outpath+'fig7_wind_composites.'+saveas)
+    # Figure 8
     time_series(simulations[0], key='vitw',
                 coords=[(16,86,48),(22,86,48),(30,86,48)], 
                 ptitle='vertical wind', ylab='Wind velocity', 
                 unit='m/s', plot=True, trange=[1777,1876], 
-                tunit='Venus days', savename=outpath+'fig7_wtimeseries.'+saveas,
+                tunit='Venus days', savename=outpath+'fig8_wtimeseries.'+saveas,
                 fsize=14, save=True, saveformat=saveas)
-    # Figure 8
+    # Figure 9
     timeseries_transform(simulations[0],key='vitw', fsize=14, plot_transform=True,
                          coords=[(16,86,48),(22,86,48),(30,86,48)],
                          trange=[1777,1876], save=True, saveformat=saveas,
-                         savename=outpath+'fig8_wfourier_transform.'+saveas)
-    # Figure 9
+                         savename=outpath+'fig9_wfourier_transform.'+saveas)
+    # Figure 10
     vega_series(balloons[0], balloons[1], simulations[0], savearg=True,
-                savename=outpath+'fig9_vega_series.'+saveas, sformat=saveas)
+                savename=outpath+'fig10_vega_series.'+saveas, sformat=saveas)
 
-    convergence(simulations, cloud_lev=49, surf_lev=8, surf_lev2=22, 
-                lat=48, fsize=14)
 
 # %%
