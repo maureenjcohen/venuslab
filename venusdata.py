@@ -133,7 +133,7 @@ class Planet:
         cp0 = 1000 # J/kg/K
         T0 = 460 # K
         v0 = 0.35 # exponent
-        cp = cp0*(self.data['temp'][:]/T0)**v0
+        cp = cp0*((self.data['temp'][:]/T0)**v0)
         self.cp = cp
         self.cp0 = cp0
         self.T0 = T0
@@ -148,7 +148,7 @@ class Planet:
                 self.calc_cp()
             p0 = 100000
             theta_v = (self.data['temp'][:]**self.v0 +
-                    self.v0*(self.T0**self.v0)*(np.log((p0/self.data['pres'][:])**(self.RCO2/self.cp0))))
+                    self.v0*(self.T0**self.v0)*(np.log((p0/self.data['pres'][:]))**(self.RCO2/self.cp0)))
             theta = theta_v**(1/self.v0)
             self.theta = theta
         elif self.model=='oasis':
