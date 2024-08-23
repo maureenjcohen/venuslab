@@ -97,7 +97,6 @@ def interp_isentropes(iris_cubes, thetalevs, outpath):
 
 
 # %%
-# %%
 def interp_isentropes_vpcm(iris_cubes, thetalevs, outpath):
     """ Open Iris CubeList which is on pressure levels
         Interpolate all variables onto isentropes       """
