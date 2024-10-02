@@ -8,7 +8,9 @@
 # Input file paths and outputs - only part of script that should be edited
 # %%
 vpcm_path = '/home/maureenjcohen/lmd_data/aoa_surface.nc'
+surfacepath = '/exomars/data/analysis/volume_8/mc5526/aoa_surface.nc'
 # Simulation with surface age of air tracer - baseline model state
+cloudpath = '/exomars/data/analysis/volume_9/mc5526/lmd_data/aoa_cloud.nc'
 
 # Import packages
 # %%
@@ -21,10 +23,10 @@ import windspharm
 from matplotlib.colors import TwoSlopeNorm
 
 # %%
-def init_model_data(inpath):
+def init_model_data(inpath, modelname, simname):
     """ Instantiate Planet object from Venus PCM output data"""
 
-    plobject = Planet(venusdict)
+    plobject = Planet(venusdict, modelname, simname)
     plobject.load_file(inpath)
     plobject.setup()
 
@@ -42,7 +44,7 @@ def helm_panels(plobject, time_slice=-100, levs=[12,20,30], qscale=[0.1,1,2],
     temp = np.array([plobject.data['temp'][time_slice,lev,:,:] for lev in levs])
     pres = np.array([plobject.data['pres'][time_slice,lev,:,:] for lev in levs])
     w = -np.array((omega*temp*plobject.RCO2)/(pres*plobject.g))
-    geop = np.array([plobject.data['geop'][time_slice,lev,:,:] for lev in levs])
+    geop = np.array([plobject.data['geop'][time_slice,lev,:,:] for lev in levs])/plobject.g
 
     eddy_us = []
     eddy_vs = []

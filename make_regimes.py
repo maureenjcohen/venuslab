@@ -29,7 +29,7 @@ import netCDF4 as nc
 def init_model_data(inpath):
     """ Instantiate Planet object from Venus PCM output data"""
 
-    plobject = Planet(venusdict)
+    plobject = Planet(venusdict, 'vpcm', 'surface')
     plobject.load_file(inpath)
     plobject.setup()
 

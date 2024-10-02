@@ -17,12 +17,17 @@ venusdict = {'radius': 6051.3, 'g': 8.87, 'rotperiod' : 243.0,
              'molmass': 0.04401, 'R' : 8.3143, 'RCO2' : 188.92, 'rhoconst': 65.,
              'scaleh': 16.,
              'name': 'Venus'}
-## Heights in km for 50-level sims188
-heights50 = [0.00, 0.03, 0.12, 0.32, 0.68, 1.23, 2.03, 3.10, 4.50, 6.23, 8.35,
+## Heights in km for 50-level sims from Lebonnois 2010
+heights50_old = [0.00, 0.03, 0.12, 0.32, 0.68, 1.23, 2.03, 3.10, 4.50, 6.23, 8.35,
                10.8, 13.7, 17.0, 20.7, 24.6, 28.3, 31.9, 35.2, 38.4, 41.4, 44.2,
                46.9, 49.5, 51.9, 54.1, 56.2, 58.1, 60.1, 61.9, 63.7, 65.5, 67.2,
                68.8, 70.5, 72.2, 73.8, 75.5, 77.1, 78.7, 80.2, 81.8, 83.3, 84.8,
                86.2, 87.8, 90.1, 92.9, 94.9, 101.]
+heights50 = [0.,  0.05,  0.2,  0.4,  0.8,  1.3,  2.2,  3.3,  4.7,  6.5,  8.6,
+       11.1, 14., 17.3, 20.9, 24.7, 28.5, 32.1, 35.4, 38.6, 41.6, 44.4,
+       47.1, 49.7, 52.1, 54.3, 56.4, 58.4, 60.3, 62.1, 63.9, 65.6, 67.4,
+       69., 70.7, 72.3, 73.9, 75.4, 76.9, 78.4, 79.8, 81.2, 82.6, 84.,
+       85.3, 86.8, 88.7, 91.2, 94.1, 97.] 
 isentropes70 = [283] + list(np.arange(290,980,10))
 
 ### Planet class object definition ###
@@ -177,6 +182,17 @@ class Planet:
             self.area = np.sum(self.data['aire'][:])
         elif self.model=='oasis':
             self.area = np.sum(self.areas)
+
+    def alt_levels(self):
+        """ Approximate altitude levels through long-term mean of
+        global area-weighted mean geopotential height above surf """
+        if self.model=='vpcm':
+            time_mean_geop = self.data['geop'].mean(dim='time_counter')/self.g
+            if not hasattr(self, 'area'):
+                self.total_area() # Get total surface area if not done already
+            glob_mean = np.sum(self.data['aire'].values*time_mean_geop.values, axis=(1,2))/self.area.values
+            self.heights = glob_mean/1000
+
 
     def setup(self):
         self.set_resolution()
