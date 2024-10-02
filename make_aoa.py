@@ -515,7 +515,7 @@ def convergence(plobjects, cloud_lev=49, surf_lev=8, surf_lev2=18, surf_lev3=22,
 
     ax[0,1].plot(surf_axis, surf_grad, color='g')
     ax[0,1].plot(surf_axis, np.zeros_like(surf_axis), color='r', linestyle='dashed')
-    ax[0,1].set_title('b) Rage of change of age of air', fontsize=fsize)
+    ax[0,1].set_title('b) Rate of change of age of air', fontsize=fsize)
     ax[0,1].set_ylabel('Change per year')
 
     ax[0,2].plot(surf_axis, surf_filtered, color='r', label='Smoothed data')
