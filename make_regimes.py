@@ -8,6 +8,7 @@
 # Input file paths and outputs - only part of script that should be edited
 # %%
 surfacepath = '/exomars/data/analysis/volume_8/mc5526/aoa_surface.nc'
+cloudpath = '/exomars/data/analysis/volume_9/mc5526/lmd_data/aoa_cloud.nc'
 # Simulation with surface age of air tracer - baseline model state
 
 # Cleaned Pioneer Venus data
@@ -29,7 +30,7 @@ import netCDF4 as nc
 def init_model_data(inpath):
     """ Instantiate Planet object from Venus PCM output data"""
 
-    plobject = Planet(venusdict, 'vpcm', 'surface')
+    plobject = Planet(venusdict, 'vpcm', 'cloud')
     plobject.load_file(inpath)
     plobject.setup()
 

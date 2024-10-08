@@ -68,7 +68,7 @@ class Probe:
 
         data = pd.read_csv(probepath, sep=',')
         self.data = data # Add DataFrame to object
-        self.RCO2 = 287.05
+        self.RCO2 = 188.92
         self.g = 8.87 
         self.radius = 6051.3 # km
 
@@ -121,19 +121,19 @@ class Probe:
         cp0 = 1000 # J/kg/K
         T0 = 460 # K
         v0 = 0.35 # exponent
-        cp = cp0*(self.data['T(DEG K)'][:]/T0)**v0
+        cp = cp0*((self.data['T(DEG K)'][:]/T0)**v0)
         self.cp = cp
         self.cp0 = cp0
         self.T0 = T0
         self.v0 = v0
 
-    def calc_theta(self):
+    def calc_theta(self, pref=9.2e6):
         """ Formula LMDZ Venus uses for potential temperature to account for
         specific heat capacity varying with height.
         See Lebonnois et al 2010.   """
         if not hasattr(self, 'cp'):
             self.calc_cp()
-        p0 = self.data['P(BARS)'].values[-1]
+        p0 = pref*1e-5
         theta_v = (self.data['T(DEG K)'][:]**self.v0 +
                    self.v0*(self.T0**self.v0)*(np.log((p0/self.data['P(BARS)'][:])**(self.RCO2/self.cp0))))
         theta = theta_v**(1/self.v0)

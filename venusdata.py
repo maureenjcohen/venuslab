@@ -23,6 +23,7 @@ heights50_old = [0.00, 0.03, 0.12, 0.32, 0.68, 1.23, 2.03, 3.10, 4.50, 6.23, 8.3
                46.9, 49.5, 51.9, 54.1, 56.2, 58.1, 60.1, 61.9, 63.7, 65.5, 67.2,
                68.8, 70.5, 72.2, 73.8, 75.5, 77.1, 78.7, 80.2, 81.8, 83.3, 84.8,
                86.2, 87.8, 90.1, 92.9, 94.9, 101.]
+## Heights in km calculated from global area-weighted long-term mean of geopotential height
 heights50 = [0.,  0.05,  0.2,  0.4,  0.8,  1.3,  2.2,  3.3,  4.7,  6.5,  8.6,
        11.1, 14., 17.3, 20.9, 24.7, 28.5, 32.1, 35.4, 38.6, 41.6, 44.4,
        47.1, 49.7, 52.1, 54.3, 56.4, 58.4, 60.3, 62.1, 63.9, 65.6, 67.4,
@@ -144,16 +145,16 @@ class Planet:
         self.T0 = T0
         self.v0 = v0
 
-    def calc_theta(self):
+    def calc_theta(self, pref=9.2e6):
         """ Formula VPCM uses for potential temperature to account for
         specific heat capacity varying with height.
         See Lebonnois et al 2010.   """
         if self.model=='vpcm':
             if not hasattr(self, 'cp'):
                 self.calc_cp()
-            p0 = 100000
+            p0 = pref
             theta_v = (self.data['temp'][:]**self.v0 +
-                    self.v0*(self.T0**self.v0)*(np.log((p0/self.data['pres'][:]))**(self.RCO2/self.cp0)))
+                    self.v0*(self.T0**self.v0)*(np.log((p0/self.data['pres'][:])**(self.RCO2/self.cp0))))
             theta = theta_v**(1/self.v0)
             self.theta = theta
         elif self.model=='oasis':

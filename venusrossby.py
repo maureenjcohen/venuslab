@@ -14,7 +14,7 @@ def omega_profile(plobject, hrange=(0,-1), trange=(0,-1),
     zwind = np.mean(plobject.data['vitu'][trange[0]:trange[1],hrange[0]:hrange[1],:,:],0)
     if gmean==True:
         grid_areas = plobject.data['aire'][:]
-        zmean = np.sum(zwind*grid_areas[np.newaxis,:,:], axis=(1,2))/(plobject.area)
+        zmean = np.sum(zwind*grid_areas, axis=(1,2))/(plobject.area)
     # Area-weighted spatial and time mean of zonal wind
     else:
         zmean = np.mean(zwind,axis=-1)
@@ -54,7 +54,7 @@ def bv_freq(plobject, hrange=(0,-1), trange=(0,-1),
     th_mean = np.mean(plobject.theta[trange[0]:trange[1],hrange[0]:hrange[1],:,:], axis=0)
     if gmean==True:
         grid_areas = plobject.data['aire'][:]
-        th_prof = np.sum(th_mean*grid_areas[np.newaxis,:,:], axis=(1,2))/(plobject.area)
+        th_prof = np.sum(th_mean*grid_areas, axis=(1,2))/(plobject.area)
         th_dz = np.gradient(th_prof)/np.gradient(plobject.heights[hrange[0]:hrange[1]]*1000)
     else:
         th_prof = np.mean(th_mean, axis=-1)
@@ -95,12 +95,16 @@ def coriolis(plobject, gmean=True, lat=80, hrange=(0,-1), trange=(0,-1)):
 def scaleheight(plobject, hrange=(0,-1), trange=(0,-1),
                 gmean=True, lat=80):
 
-    """ Approximate velocity of a gravity wave      """
+    """ Scale height of atmosphere as a function of altitude  
+        kT/mg where k is Boltzmann's constant, T is temp, m is average mass of atoms (CO2) in kg,
+        and g is gravity
+        This is equivalent to RT/Mg, where R is universal gas constant (8.314 Nm/molK), T
+        is temp, M is molar mass (kg/mol), and g is gravity"""
 
     mean_temp = np.mean(plobject.data['temp'][trange[0]:trange[1],hrange[0]:hrange[1],:,:], axis=0)
     if gmean==True:
         grid_areas = plobject.data['aire'][:]
-        global_mean = np.sum(mean_temp*grid_areas[np.newaxis,:,:], axis=(1,2))/(plobject.area)
+        global_mean = np.sum(mean_temp*grid_areas, axis=(1,2))/(plobject.area)
     else:
         global_mean = np.mean(mean_temp, axis=-1)
         global_mean = global_mean[:,lat]
