@@ -199,7 +199,7 @@ if __name__ == "__main__":
                      savearg=True, savename='fig2_profiles.png',
                      sformat='png')
     
-    compare_rossby(vpcm, pv_probes, trop_lat=48, extra_lat=80, 
+    compare_rossby(vpcm, pv_probes, trop_lat=32, extra_lat=80, 
                    trop_gmean=False, extra_gmean=False,
                    hrange=(0,-1), trange=(0,-1), fsize=14, savearg=False,
                    savename='fig3_rossby.png', sformat='png')

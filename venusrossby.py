@@ -79,6 +79,32 @@ def bv_freq(plobject, hrange=(0,-1), trange=(0,-1),
     return freq
 
 # %%
+def construct_bv(plobject, bv_freq):
+    """ Make a simplified BV frequency profile from surface to 65 km"""
+
+    below_40 = [index for index, value in enumerate(plobject.heights) if value <= 40.]
+    above_40 = [index for index, value in enumerate(plobject.heights) if value > 40. and value <= 65.]
+
+    mean_lower_bv = np.nanmean(bv_freq[below_40[0]:below_40[-1]])
+    # Constant value of BV for below 40 km
+    bv_65 = bv_freq[above_40[-1]].values
+    # Get BV value at or close to 65 km
+    lower_y = plobject.heights[above_40[0]]
+    upper_y = plobject.heights[above_40[-1]]
+    # Get y range for linear fit
+    m = (upper_y - lower_y)/(bv_65 - mean_lower_bv) 
+ 
+    # Slope of line
+    x = (plobject.heights[above_40[0]:] - lower_y)/m + mean_lower_bv
+
+    bv_profile = np.ones_like(plobject.heights)
+    bv_profile[above_40[0]:] = bv_freq[above_40[0]-1:]
+    bv_profile[below_40[0]:below_40[-1]+1] = mean_lower_bv
+
+    return bv_profile
+
+
+# %%
 def coriolis(plobject, gmean=True, lat=80, hrange=(0,-1), trange=(0,-1)):
 
     """ Calculate f=2*Omega*sin(lat) """
@@ -121,11 +147,11 @@ def extratropical(plobject, gmean=True, lat=80, hrange=(0,-1), trange=(0,-1)):
     """ Calculate vertical profile of extratropical 
         Rossby radius of deformation                    
         see Carone et al. 2015                          """
-    
-    bv = bv_freq(plobject, hrange=hrange, trange=trange, gmean=gmean, lat=lat, plot=False, save=False)
+    bv_real = bv_freq(plobject, hrange=hrange, trange=trange, gmean=gmean, lat=lat, plot=False, save=False)
+    bv = construct_bv(plobject, bv_real)
     f = coriolis(plobject, gmean=gmean, lat=lat, hrange=hrange, trange=trange)
     H = scaleheight(plobject, gmean=gmean, lat=lat, hrange=hrange, trange=trange)
-    extra_r = bv*H/f
+    extra_r = bv[hrange[0]:hrange[-1]]*H/f
     
     return extra_r
 
@@ -135,14 +161,15 @@ def tropical(plobject, gmean=True, lat=80, hrange=(0,-1), trange=(0,-1)):
     """ Calculate vertical profile of tropical Rossby
         radius of deformation
         see Carone et al. 2015                  """
-    
-    bv = bv_freq(plobject, hrange, trange, gmean=gmean, lat=lat, plot=False, save=False)
+
+    bv_real = bv_freq(plobject, hrange, trange, gmean=gmean, lat=lat, plot=False, save=False)
+    bv = construct_bv(plobject, bv_real)
     zwind, omeg, period_days = omega_profile(plobject, hrange, trange,
                                plot=False, gmean=gmean, lat=lat, save=False)
     beta = 2*omeg/(plobject.radius*1000) 
     # Value for equator
     H = scaleheight(plobject, lat=lat, gmean=gmean, hrange=hrange, trange=trange)
-    trop_r = np.sqrt(bv*H/(2*beta))
+    trop_r = np.sqrt(bv[hrange[0]:hrange[-1]]*H/(2*beta))
 
     return trop_r
 

@@ -5,6 +5,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import datetime
+from scipy.signal import savgol_filter
+
 
 ## File paths ##
 # %%
@@ -71,6 +73,7 @@ class Probe:
         self.RCO2 = 188.92
         self.g = 8.87 
         self.radius = 6051.3 # km
+        self.heights = self.data['ALT(KM)'].values
 
     def profile(self, key):
         if key=='Zonal wind':
@@ -121,7 +124,7 @@ class Probe:
         cp0 = 1000 # J/kg/K
         T0 = 460 # K
         v0 = 0.35 # exponent
-        cp = cp0*((self.data['T(DEG K)'][:]/T0)**v0)
+        cp = cp0*((self.data['T(DEG K)']/T0)**v0)
         self.cp = cp
         self.cp0 = cp0
         self.T0 = T0
@@ -134,8 +137,8 @@ class Probe:
         if not hasattr(self, 'cp'):
             self.calc_cp()
         p0 = pref*1e-5
-        theta_v = (self.data['T(DEG K)'][:]**self.v0 +
-                   self.v0*(self.T0**self.v0)*(np.log((p0/self.data['P(BARS)'][:])**(self.RCO2/self.cp0))))
+        theta_v = (self.data['T(DEG K)']**self.v0 +
+                   self.v0*(self.T0**self.v0)*(np.log((p0/self.data['P(BARS)'])**(self.RCO2/self.cp0))))
         theta = theta_v**(1/self.v0)
         self.theta = theta
 
@@ -152,11 +155,32 @@ class Probe:
     def calc_bv_freq(self):
         if not hasattr(self,'theta'):
             self.calc_theta()
-
         th_dz = np.gradient(self.theta)/np.gradient(self.data['ALT(KM)']*1000)
         root_term = self.g*th_dz/self.theta
         freq = np.sqrt(root_term)
         self.bv = freq
+
+    def construct_bv(self):
+        if not hasattr(self,'bv'):
+            self.calc_bv_freq()
+        below_40 = [index for index, value in enumerate(self.heights) if value <= 35.]
+        above_40 = [index for index, value in enumerate(self.heights) if value > 35.]
+
+        mean_lower_bv = np.nanmean(self.bv[below_40[0]:below_40[-1]])
+        if self.name == 'North':
+            bv_60 = np.max(self.bv)
+        else:
+            bv_60 = self.bv[above_40[0]]
+        lower_y = self.heights[above_40[-1]]
+        upper_y = self.heights[above_40[0]]    
+        m = (upper_y - lower_y)/(bv_60 - mean_lower_bv) 
+        x = (self.heights[above_40[0]:above_40[-1]] - lower_y)/m + mean_lower_bv
+
+        bv_profile = np.ones_like(self.heights)
+        bv_profile[above_40[0]:above_40[-1]] = self.bv[above_40[0]:above_40[-1]]
+        bv_profile[below_40[0]-1:below_40[-1]+1] = mean_lower_bv
+
+        self.bv_profile = bv_profile
 
     def calc_coriolis(self):
         if not hasattr(self,'omega'):
@@ -174,16 +198,18 @@ class Probe:
     def calc_rossby_radii(self):
         if not hasattr(self,'bv'):
             self.calc_bv_freq()
+        if not hasattr(self, 'bv_profile'):
+            self.construct_bv()
         if not hasattr(self,'coriolis'):
             self.calc_coriolis()
         if not hasattr(self,'scale_h'):
             self.calc_scale_height()
 
-        extra_r = self.bv*self.scale_h/self.coriolis
+        extra_r = self.bv_profile*self.scale_h/self.coriolis
         self.extra_r = extra_r
 
         beta = 2*self.omega/(self.radius*1000) 
-        trop_r = np.sqrt(self.bv*self.scale_h/(2*beta))
+        trop_r = np.sqrt(self.bv_profile*self.scale_h/(2*beta))
         self.trop_r = trop_r
 
 
@@ -199,18 +225,77 @@ def all_probes(probelist, key):
     for ind, probe in enumerate(probelist):
         if key=='Zonal wind':
             cube = probe.data['WEST'].values
+            unit = 'm/s'
         elif key=='Meridional wind':
             cube = probe.data['NORTH'].values
+            unit = 'm/s'
         elif key=='Descent velocity':
             cube = probe.data['DOWN'].values
+            unit = 'm/s'
+        elif key=='Temperature':
+            cube = probe.data['T(DEG K)'].values
+            unit = 'K'
+        elif key=='Pressure':
+            cube = probe.data['P(BARS)'].values
+            unit = 'bar'
+        elif key=='Density':
+            cube = probe.data['RHO(KG/M3)'].values
+            unit = 'kg/m3'
+        elif key=='Potential temperature':
+            if not hasattr(probe,'theta'):
+                probe.calc_theta()
+            unit = 'K'
+        elif key=='BV frequency':
+            if not hasattr(probe,'bv'):
+                probe.calc_bv_freq()
+            cube = probe.bv
+            unit = 's-1'
+        elif key=='Rotation period':
+            if not hasattr(probe,'period'):
+                probe.calc_omega()
+            cube = probe.period
+            unit = 'Earth days'
+        elif key=='Tropical Rossby radius':
+            if not hasattr(probe,'trop_r'):
+                probe.calc_rossby_radii()
+            cube = probe.trop_r/(probe.radius*1000)
+            unit = 'm'
+        elif key=='Extratropical Rossby radius':
+            if not hasattr(probe,'extra_r'):
+                probe.calc_rossby_radii()
+            cube = probe.extra_r/(probe.radius*1000)
+            unit = 'm'
         else:
             print('Key not recognised.')
 
         plt.plot(cube, probe.data['ALT(KM)'].values, color=colors[ind], label=probe.name)
     plt.title(f'{key} profiles from Pioneer Venus descent probes')
-    plt.xlabel(f'{key} / m/s')
+    plt.xlabel(f'{key} /{unit}')
     plt.ylabel('Altitude [km]')
     plt.legend()
     plt.show()
+
+# %%
+def probe_bv(probe):
+    if not hasattr(probe,'bv'):
+        probe.calc_bv_freq()
+
+    below_40 = [index for index, value in enumerate(probe.heights) if value <= 35.]
+    above_40 = [index for index, value in enumerate(probe.heights) if value > 35.]
+  
+    mean_lower_bv = np.nanmean(probe.bv[below_40[0]:below_40[-1]])
+    if probe.name == 'North':
+        bv_60 = np.max(probe.bv)
+    else:
+        bv_60 = probe.bv[above_40[0]]
+    lower_y = probe.heights[above_40[-1]]
+    upper_y = probe.heights[above_40[0]]  
+    m = (upper_y - lower_y)/(bv_60 - mean_lower_bv) 
+    x = (probe.heights[above_40[0]:above_40[-1]] - lower_y)/m + mean_lower_bv
+    bv_profile = np.ones_like(probe.heights)
+    bv_profile[above_40[0]:above_40[-1]] = probe.bv[above_40[0]:above_40[-1]]
+    bv_profile[below_40[0]-1:below_40[-1]+1] = mean_lower_bv
+
+    return bv_profile
 
 # %%
