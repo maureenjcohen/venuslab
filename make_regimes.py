@@ -130,14 +130,14 @@ def compare_rossby(plobject, probelist, trop_lat=48, extra_lat=80,
             lambda_probe = probe.trop_r/(probe.radius*1000)
             plt.plot(L_probe, probe.data['ALT(KM)'].values, 
                          linestyle='dashed',
-                         color=colors[ind], label=probe.name+', extratropical')
+                         color=colors[ind], label=probe.name+', ' +probe.latstr+', extratropical')
             plt.plot(lambda_probe, probe.data['ALT(KM)'].values, 
-                         color=colors[ind], label=probe.name+', tropical')
+                         color=colors[ind], label=probe.name+', ' +probe.latstr+', tropical')
     
     plt.plot(L_vpcm, plobject.heights[hrange[0]:hrange[1]], 
-            color='r', linestyle='dashed', label='VPCM, extratropical')
+            color='r', linestyle='dashed', label='VPCM, $60^{\circ}$N, extratropical')
     plt.plot(lambda_vpcm, plobject.heights[hrange[0]:hrange[1]], 
-            color='r', label='VPCM, tropical')
+            color='r', label='VPCM, $30^{\circ}$S, tropical')
     plt.plot(np.ones_like(lambda_vpcm), 
              plobject.heights[hrange[0]:hrange[1]],
              color='k', linestyle='dotted',
