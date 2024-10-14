@@ -195,7 +195,7 @@ class Probe:
         H = numerator/denom
         self.scale_h = H
 
-    def calc_rossby_radii(self):
+    def calc_rossby_radii(self, constructed=True):
         if not hasattr(self,'bv'):
             self.calc_bv_freq()
         if not hasattr(self, 'bv_profile'):
@@ -205,12 +205,22 @@ class Probe:
         if not hasattr(self,'scale_h'):
             self.calc_scale_height()
 
-        extra_r = self.bv_profile*self.scale_h/self.coriolis
-        self.extra_r = extra_r
+        if constructed==True:
+            bv = self.bv_profile
+            extra_r = bv*self.scale_h/self.coriolis
+            self.extra_r_constructed = extra_r
 
-        beta = 2*self.omega/(self.radius*1000) 
-        trop_r = np.sqrt(self.bv_profile*self.scale_h/(2*beta))
-        self.trop_r = trop_r
+            beta = 2*self.omega/(self.radius*1000) 
+            trop_r = np.sqrt(bv*self.scale_h/(2*beta))
+            self.trop_r_constructed = trop_r
+        else:
+            bv = self.bv
+            extra_r = bv*self.scale_h/self.coriolis
+            self.extra_r = extra_r
+
+            beta = 2*self.omega/(self.radius*1000) 
+            trop_r = np.sqrt(bv*self.scale_h/(2*beta))
+            self.trop_r = trop_r
 
 
 
