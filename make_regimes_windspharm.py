@@ -7,10 +7,11 @@
 
 # Input file paths and outputs - only part of script that should be edited
 # %%
-vpcm_path = '/home/maureenjcohen/lmd_data/aoa_surface.nc'
 surfacepath = '/exomars/data/analysis/volume_8/mc5526/aoa_surface.nc'
+surfaceplevs = '/exomars/data/analysis/volume_8/mc5526/aoa_surface_plevs.nc'
 # Simulation with surface age of air tracer - baseline model state
 cloudpath = '/exomars/data/analysis/volume_9/mc5526/lmd_data/aoa_cloud.nc'
+outpath = '/exomars/data/analysis/volume_8/mc5526/make_regimes/'
 
 # Import packages
 # %%
@@ -28,13 +29,14 @@ def init_model_data(inpath, modelname, simname):
 
     plobject = Planet(venusdict, modelname, simname)
     plobject.load_file(inpath)
-    plobject.setup()
+#    plobject.setup()
 
     return plobject
 
 # %%
-def helm_panels(plobject, time_slice=-100, levs=[12,20,30], qscale=[0.1,1,2], 
-                qmultiplier=0.5, n=3, fsize=14):
+def helm_panels(plobject, time_slice=-99, levs=[12,20,30], qscale=[0.1,1,2], 
+                qmultiplier=0.5, n=3, fsize=14, savearg=False, savename='fig1_regimes.png',
+                sformat='png'):
     """ Figure with 6 sub-figures, showing the wind vectors and Helmholtz decomp
         at 3 different altitude levels                                  """
     
@@ -120,21 +122,27 @@ def helm_panels(plobject, time_slice=-100, levs=[12,20,30], qscale=[0.1,1,2],
         gbar.set_label('Eddy geop. height / m', loc='center')
     
     plt.subplots_adjust(wspace=0.2)
-    plt.show()
+    if savearg==True:
+        plt.savefig(savename, format=sformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
 
 # %%
-def vort_altlat(plobject, lon=48, time_slice=1728, hmin=12, hmax=40,
-                fsize=14):
-    """ Altitude-longitude plot of divergence"""
+def vort_altlat(plobject, lon=48, time_slice=1818, hmin=0, hmax=-1,
+                fsize=14, savearg=False, savename='fig4a_relvort.png',
+                sformat='png'):
+    """ Altitude-longitude plot of eddy relative vorticity
+    Good snapshots: surface 1249, 1256, 1265, 1274, 1433, 1733, 1812, 1818, 1836, 1873"""
 
     u = -np.flip(plobject.data['vitu'][time_slice,hmin:hmax,:,:], axis=(1,2))
     v = np.flip(plobject.data['vitv'][time_slice,hmin:hmax,:,:], axis=(1,2))
-    u = np.transpose(u, (1,2,0))
-    v = np.transpose(v, (1,2,0))
+    u = np.transpose(u, axes=[1,2,0])
+    v = np.transpose(v, axes=[1,2,0])
 
     winds = windspharm.standard.VectorWind(u, v, rsphere=plobject.radius*1000)
-    div = np.flip(np.transpose(winds.divergence(truncation=21), (2,0,1)), axis=(1,2))
-    vrt = np.flip(np.transpose(winds.vorticity(truncation=21), (2,0,1)), axis=(1,2))
+    div = np.flip(np.transpose(winds.divergence(truncation=21), axes=[2,0,1]), axis=(1,2))
+    vrt = np.flip(np.transpose(winds.vorticity(truncation=21), axes=[2,0,1]), axis=(1,2))
     eddy_vrt = vrt - np.mean(vrt, axis=-1)[:,:,np.newaxis]
 
     fig, ax = plt.subplots(figsize=(6,6))
@@ -149,5 +157,23 @@ def vort_altlat(plobject, lon=48, time_slice=1728, hmin=12, hmax=40,
     ax.set_ylabel('Height / km', fontsize=fsize)
     cbar = plt.colorbar(cf, ax=ax)
     cbar.set_label('Relative vorticity / $10^{-5}$ s-1', loc='center')
-    plt.show()
+    if savearg==True:
+        plt.savefig(savename, format=sformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
+
+
 # %%
+if __name__ == "__main__":
+
+    surface = init_model_data(surfacepath, 'vpcm', 'surface')
+    cloud = init_model_data(cloudpath, 'vpcm', 'cloud')
+
+    helm_panels(surface, levs=[12,20,30], savearg=False, 
+                savename='/exomars/data/analysis/volume_8/mc5526/make_regimes/fig1_regimes_withgeop.png', 
+                sformat='png')
+    
+    vort_altlat(surface, time_slice=1818, savearg=False, 
+                savename='/exomars/data/analysis/volume_8/mc5526/make_regimes/fig4a_eddy_vort.png', 
+                sformat='png')

@@ -47,12 +47,15 @@ def interp_plevs(iris_cubes, plevs, outpath):
     """ Open an Iris CubeList containing pressure along with other variables
         Interpolate the other variables onto the pressure levels given in input list plevs """
 
+
+    for cube in iris_cubes:
+        if cube.long_name == 'Air pressure':
+            pcube = cube.copy()
+
     try:
-        for cube in iris_cubes:
-            if cube.long_name == 'pressure':
-                pcube = cube.copy()
+        print(pcube.long_name)
     except:
-        print('No pressure cube provided')
+        print('No pressure cube')
 
     new_cubes = []
     for cube in iris_cubes:
