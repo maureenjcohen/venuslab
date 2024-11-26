@@ -96,46 +96,54 @@ def time_sphere(inputarray, lons, lats, i, j, trange=(500, 600, 5), inputcols='p
 
 # %%
 def lonlat_frame(inputarray, lons, lats, heights, lev, time_slice, 
-                 inputcols, ptitle, cunit, cmin, cmax):
+                 inputcols, ptitle, cunit, clevs, tday,
+                 animation=False):
 
-    levels = np.linspace(cmin, cmax, 100)
+    if clevs is None:
+        clevs = np.linspace(np.min(inputarray[time_slice,lev,:,:]), 
+                            np.max(inputarray[time_slice,lev,:,:]), 
+                            100)
     fig = plt.figure(figsize=(8, 6))
     plt.contourf(lons, lats, inputarray[time_slice,lev,:,:], 
- #                levels=levels,
+                 levels=clevs,
                  cmap=inputcols, extend='max')
-    plt.title(f'{ptitle}, h={heights[lev]} km')
-    plt.xlabel('Longitude [deg]')
-    plt.ylabel('Latitude [deg]')
+    plt.title(f'{ptitle}, h={np.round(heights[lev],0)} km, day {tday}')
+    plt.xlabel('Longitude / deg')
+    plt.ylabel('Latitude / deg')
     cbar = plt.colorbar()
     cbar.set_label(f'{cunit}')
 
-    # The code block below creates a buffer and saves the plot to it.
-    # This avoids having to actually save the plot to the hard drive.
-    # We then reopen the 'saved' figure as a PIL Image object and output it.
-    buf = io.BytesIO()
-    fig.savefig(buf, bbox_inches='tight')
-    buf.seek(0)
-    img = Image.open(buf)
-    img.show()
-    buf.close()
+    if animation==True:
+        # The code block below creates a buffer and saves the plot to it.
+        # This avoids having to actually save the plot to the hard drive.
+        # We then reopen the 'saved' figure as a PIL Image object and output it.
+        buf = io.BytesIO()
+        fig.savefig(buf, bbox_inches='tight')
+        buf.seek(0)
+        img = Image.open(buf)
+        img.show()
+        buf.close()
 
-    return img
+        return img
+    else:
+        plt.show()
 
 # %%
-def animate_lonlat(inputarray, lons, lats, heights, lev, trange=(0,4499,50), 
-                   inputcols='cividis',
-                   ptitle='Age of air', cunit='seconds',
-                   cmin=0.0, cmax=14.5,
+def animate_lonlat(inputarray, lons, lats, heights, lev, 
+                   inputcols,
+                   ptitle, cunit,
+                   clevs, tdays,
                    savename='lonlat.gif'):
 
     im = []
-    for t in range(trange[0], trange[1], trange[2]):
+    for t in range(0,inputarray.shape[0],1):
         frame_shot = lonlat_frame(inputarray, lons, lats, heights, lev, 
-                                  t, inputcols, ptitle, cunit, cmin, cmax)
+                                  t, inputcols, ptitle, cunit, clevs, tdays[t], 
+                                  animation=True)
         im.append(frame_shot)
 
     im[0].save(savename, save_all=True, append_images=im[1:], optimize=False,
-            duration=1, loop=1)
+            duration=1000, loop=0)
 
 # %%
 def zm_frame(inputarray, lats, hmin, hmax, heights, time_slice, 
