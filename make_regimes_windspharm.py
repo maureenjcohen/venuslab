@@ -22,6 +22,8 @@ import matplotlib.pyplot as plt
 #import netCDF4 as nc
 import windspharm
 from matplotlib.colors import TwoSlopeNorm
+from PIL import Image
+import io
 
 # %%
 def init_model_data(inpath, modelname, simname):
@@ -36,7 +38,7 @@ def init_model_data(inpath, modelname, simname):
 # %%
 def helm_panels(plobject, time_slice=-99, levs=[12,20,30], qscale=[0.1,1,2], 
                 qmultiplier=0.5, n=3, fsize=14, savearg=False, savename='fig1_regimes.png',
-                sformat='png'):
+                sformat='png', animation=False):
     """ Figure with 6 sub-figures, showing the wind vectors and Helmholtz decomp
         at 3 different altitude levels                                  """
     
@@ -125,13 +127,25 @@ def helm_panels(plobject, time_slice=-99, levs=[12,20,30], qscale=[0.1,1,2],
     if savearg==True:
         plt.savefig(savename, format=sformat, bbox_inches='tight')
         plt.close()
+    elif animation==True:
+        # The code block below creates a buffer and saves the plot to it.
+        # This avoids having to actually save the plot to the hard drive.
+        # We then reopen the 'saved' figure as a PIL Image object and output it.
+        buf = io.BytesIO()
+        fig.savefig(buf, bbox_inches='tight')
+        buf.seek(0)
+        img = Image.open(buf)
+        img.show()
+        buf.close()
+
+        return img
     else:
         plt.show()
 
 # %%
 def vort_altlat(plobject, lon=48, time_slice=1818, hmin=0, hmax=-1,
                 fsize=14, savearg=False, savename='fig4a_relvort.png',
-                sformat='png'):
+                sformat='png', animation=False):
     """ Altitude-longitude plot of eddy relative vorticity
     Good snapshots: surface 1249, 1256, 1265, 1274, 1433, 1733, 1812, 1818, 1836, 1873"""
 
@@ -160,8 +174,51 @@ def vort_altlat(plobject, lon=48, time_slice=1818, hmin=0, hmax=-1,
     if savearg==True:
         plt.savefig(savename, format=sformat, bbox_inches='tight')
         plt.close()
+    elif animation==True:
+        # The code block below creates a buffer and saves the plot to it.
+        # This avoids having to actually save the plot to the hard drive.
+        # We then reopen the 'saved' figure as a PIL Image object and output it.
+        buf = io.BytesIO()
+        fig.savefig(buf, bbox_inches='tight')
+        buf.seek(0)
+        img = Image.open(buf)
+        img.show()
+        buf.close()
+
+        return img
     else:
         plt.show()
+
+# %%
+def animate_helm(plobject, trange=(1816,1876),
+                savename='regimes.gif'):
+    """Animate Figure 1 - 3 Venus days
+       Input object must be the Surface dataset """
+    im = []
+    for t in range(trange[0],trange[1],1):
+        frame_shot = helm_panels(plobject, time_slice=t, levs=[12,20,30], qscale=[0.1,1,2], 
+                qmultiplier=0.5, n=3, fsize=14, savearg=False, animation=True)
+        im.append(frame_shot)
+
+    im[0].save(outpath+savename, save_all=True, append_images=im[1:], optimize=False,
+            duration=500)
+
+
+# %%
+def animate_vort(plobject, trange=(1816,1876),
+                savename='vorticity.gif'):
+    """Animate Figure 4a - 3 Venus days
+       Input object must be the Cloud dataset """
+    
+    im = []
+    for t in range(trange[0],trange[1],1):
+        frame_shot = vort_altlat(plobject, lon=48, time_slice=t, hmin=0, hmax=-1,
+                fsize=14, savearg=False, animation=True)
+        im.append(frame_shot)
+
+    im[0].save(outpath+savename, save_all=True, append_images=im[1:], optimize=False,
+            duration=500)
+
 
 
 # %%
