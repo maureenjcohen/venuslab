@@ -120,6 +120,8 @@ class Planet:
             self.areas = self.data.variables['aire'].values
             if len(self.data.variables['presnivs'][:]) == 50:
                 self.heights = np.array(heights50)
+            elif len(self.data.variables['presnivs'][:]) == 78:
+                self.heights = np.array(heights78)
             else:
                 print('Altitude in km not available')
         elif self.model=='oasis':
