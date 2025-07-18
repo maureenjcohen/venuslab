@@ -180,7 +180,7 @@ def wind_vectors(plobject, meaning=True, time_slice=-1, n=2,
         plt.show()
 
 # %%
-def psi_m(plobject, meaning=True, trange=(-230,-1), time_slice=-1, plot=True):
+def psi_m(plobject, meaning=True, trange=(-230,-1), time_slice=-1, plot=True, hmin=0, hmax=49):
 
     """ Plot the mean meridional mass streamfunction. """
 
@@ -205,7 +205,7 @@ def psi_m(plobject, meaning=True, trange=(-230,-1), time_slice=-1, plot=True):
     stf = stf_constant*np.flip(stf, axis=0)*1e-10
     if plot==True:
         fig, ax = plt.subplots(figsize=(6,6))
-        cs = plt.contour(plobject.lats, plobject.heights[:-1], stf, colors='black',
+        cs = plt.contour(plobject.lats, plobject.heights[hmin:hmax], stf[hmin:hmax], colors='black',
                         levels=40)
         ax.clabel(cs, cs.levels, inline=True)
         plt.title('Mean meridional mass streamfunction, $10^{10}$ kg/s')
