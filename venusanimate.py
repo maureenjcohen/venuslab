@@ -220,28 +220,42 @@ def animate_akatsuki(snaps, levs, savename='test.gif'):
     ims[0].save(savename, save_all=True, append_images=ims[1:], optimize=False, duration=500, loop=0)
 
 # %%
-def animate_globe(data, lev, heights, t, i=0, j=30):
+def animate_globe(data, lev, heights, tf, t0=0, i=0, j=30,
+                  savepath='/exomars/projects/mc5526/VPCM_full_chemistry_runs/scratch_plots/'):
 
-    """ Input:  cube: 4-D xarray or Planet object data cube
+    """ Input:  data: 4-D xarray or Planet object data cube
                 lev: level to be visualised 
+                heights: list of model heights (attr of PlObject)
+                tf: final frame
+                t0: first frame (default 0)
                 i: central longitude of view
-                j: central latitude of view    """
+                j: central latitude of view   
+                savepath: where to save the output """
     
     cube_name = data.long_name or data.name
+    # Extract name to automatically title plot
     cube = data[:,lev,:,:]*1e6
+    # Extract level data and convert to ppm
     height = np.round(heights[lev],2)
+    # Get height in km rounded to 2 decimal points (for title)
+
     fig = plt.figure(figsize=(8, 6))
-    fig.patch.set_facecolor('black') # Background colour
+    # Create figure
+    fig.patch.set_facecolor('black') 
+    # Background colour
     ax = plt.axes(projection=ccrs.Orthographic(central_longitude=i, central_latitude=j))
-   # _, clon = add_cycl_point(cube, cube.lon, -1)
-    #arguments
+    # Create axis with orthographic proj with given central lon and lat
+    new_cube, new_lon = add_cycl_point(cube, cube.lon, -1)
+    # Add cyclical point to fix discontinuity in longitudes
+
+    # Dictionary of values for plot frames
     plot_args = {
     'transform':ccrs.PlateCarree(),
     'vmin': cube.quantile(0.01), # 1st percentile
-    'vmax': cube.quantile(0.99),
+    'vmax': cube.quantile(0.99), # 99th percentile
     'cmap': 'plasma'
     }
-
+    # Dictionary of values for ax gridlines method
     default_gridlines_kw = {'linewidth' : 0.5,
             'color' : 'silver',
             'alpha': 0.5, 
@@ -251,16 +265,16 @@ def animate_globe(data, lev, heights, t, i=0, j=30):
     
     # Define an update function that will be called for each frame
     def animate(frame):
-        plimg = ax.contourf(cube.lon, cube.lat, cube[frame,:,:], **plot_args)
+        plimg = ax.contourf(new_lon, cube.lat, new_cube[frame,:,:], **plot_args)
 
     ax.set_title(cube_name+ ', ' + str(height) + ' km', color='white', y=1.05, fontsize=14)
     ax.gridlines(draw_labels=True, **default_gridlines_kw)
     
     # Create the animation
-    ani = animation.FuncAnimation(fig, animate, frames=range(0,t), interval=200, repeat=False)
+    ani = animation.FuncAnimation(fig, animate, frames=range(t0,tf), interval=200, repeat=False)
 
-    #define the colorbar. The colorbar method needs a mappable object from which to take the colorbar
-    cbar = fig.colorbar(ax.contourf(cube.lon, cube.lat, cube[0,:,:], **plot_args))
+    #Define the colorbar. The colorbar method needs a mappable object from which to take the colorbar
+    cbar = fig.colorbar(ax.contourf(new_lon, cube.lat, new_cube[0,:,:], **plot_args))
     cbar.set_label('ppm', color='white')
     cbar.ax.yaxis.set_tick_params(color='white')
     plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='white')
@@ -268,6 +282,6 @@ def animate_globe(data, lev, heights, t, i=0, j=30):
     #plt.show()
 
     # Save the animation as an mp4 file
-    ani.save(f'{cube_name}_{height}km.mp4', writer='ffmpeg')
+    ani.save(savepath + f'{cube_name}_{height}km.mp4', writer='ffmpeg')
     # ani.save('myanimation.gif', writer='pillow') #alternative
 # %%
