@@ -284,4 +284,79 @@ def animate_globe(data, lev, heights, tf, t0=0, i=0, j=30,
     # Save the animation as an mp4 file
     ani.save(savepath + f'{cube_name}_{height}km.mp4', writer='ffmpeg')
     # ani.save('myanimation.gif', writer='pillow') #alternative
+
+# %%
+def animate_plume(plobject, key, lev, t0, tf, n=2,
+                  savepath='/exomars/projects/mc5526/VPCM_volcanic_plumes/scratch_plots/'):
+
+    """ Input:  plobject: Planet class object containing the data
+                key: Dict key of data, either 'age' or 'aoa'
+                lev: level to be visualised 
+                tf: final frame
+                t0: first frame  
+                savepath: where to save the output """
+    
+    height = np.round(plobject.heights[lev],2)
+    # Get height in km rounded to 2 decimal points (for title)
+    cube_name = plobject.data[key].long_name
+    cube = plobject.data[key][:,lev,:,:]
+    # Extract data for desired altitude
+
+    if key=='aoa':
+        cube = cube*1e9
+        unit = 'mmr ppb'
+    elif key=='age':
+        cube = cube/(60*60*24*360)
+        unit = 'years'
+
+    u = plobject.data['vitu'][:,lev,:,:]
+    v = plobject.data['vitv'][:,lev,:,:]
+    # Extract zonal and meridional wind for desired altitude
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    # Create figure
+    X, Y = np.meshgrid(plobject.lons, plobject.lats)
+
+    # Dictionary of values for plot frames
+    plot_args = {
+    'vmin': 0., # Min of plotted frames
+    'vmax': cube[t0:tf,:,:].max(), # Max of plotted frames
+    'cmap': 'viridis',
+    'extend': 'both'
+    }
+ 
+    quiv_args = {
+    'angles': 'xy',
+    'scale_units': 'xy',
+    'scale': 0.5,
+    'color': 'white'
+    }
+    
+    # Define an update function that will be called for each frame
+    def animate(frame):
+        cf = ax.contourf(plobject.lons, plobject.lats, cube[frame,:,:], **plot_args)
+        q = ax.quiver(X[::n, ::n], Y[::n, ::n], -u[frame,::n,::n],
+                   v[frame,::n,::n], **quiv_args)
+    
+    ax.quiverkey(ax.quiver(X[::n, ::n], Y[::n, ::n], -u[0,::n,::n],
+                   v[0,::n,::n], **quiv_args), X=0.9, Y=1.05, U=10, label='%s m/s' %str(10),
+                 labelpos='E', coordinates='axes', color='black')
+    ax.set_title(f'{cube_name}, ' + str(height) + ' km', color='black', y=1.05, fontsize=14)
+    ax.set_xlabel('Longitude / deg')
+    ax.set_ylabel('Latitude / deg')
+    # Create the animation
+    ani = animation.FuncAnimation(fig, animate, frames=range(t0,tf), interval=200, repeat=False)
+
+    #Define the colorbar. The colorbar method needs a mappable object from which to take the colorbar
+    cbar = plt.colorbar(ax.contourf(plobject.lons, plobject.lats, cube[35,:,:], **plot_args))
+    cbar.set_label(unit, color='black')
+    cbar.ax.yaxis.set_tick_params(color='black')
+    plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='black')
+    
+    #plt.show()
+
+    # Save the animation as an mp4 file
+    ani.save(savepath + f'{key}_{height}km.mp4', writer='ffmpeg')
+    # ani.save('myanimation.gif', writer='pillow') #alternative
+
 # %%

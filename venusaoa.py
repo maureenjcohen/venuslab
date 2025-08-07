@@ -176,7 +176,8 @@ def zmage(plobject, hmin=0, hmax=20, time_slice=-2, convert2yr=True,
 
 # %%
 def age_map(plobject, lev=16, time_slice=-1, convert2yr=True,
-            save=False, saveformat='png', savename='age_map.png'):
+            save=False, savepath='/exomars/projects/mc5526/VPCM_volcanic_plumes/scratch_plots/',
+            saveformat='png', savename='age_map.png'):
         
     """ Input: numpy array for age of air 
         Output: lon-lat plot of age of air at given model level
@@ -184,25 +185,28 @@ def age_map(plobject, lev=16, time_slice=-1, convert2yr=True,
         time_slice (default -1) selects time """
 
     ageo = plobject.data['age']
-    ageo = ageo[time_slice,lev,:,:]
+    age = ageo[time_slice,lev,:,:]
 
     if convert2yr==True:
         ageo = ageo/(60*60*24*360)
+        age = age/(60*60*24*360)
         cunit = 'years'
     else:
         cunit = 'seconds' 
 
-    levels = np.linspace(np.min(ageo),np.max(ageo),40)
+    #levels = np.linspace(ageo.quantile(0.01),ageo.quantile(0.99),40)
 
     plt.contourf(plobject.lons, plobject.lats, 
-                 ageo, levels=levels, cmap='cividis')
+                 age, vmin=ageo.quantile(0.01),
+                 vmax=ageo.quantile(0.99), cmap='cividis')
     plt.title(f'Age of air, h={plobject.heights[lev]} km')
-    plt.xlabel('Longitude [deg]')
-    plt.ylabel('Latitude [deg]')
+    plt.xlabel('Longitude /deg')
+    plt.ylabel('Latitude /deg')
     cbar = plt.colorbar()
     cbar.set_label(f'{cunit}')
     if save==True:
-        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.savefig(savepath+savename, format=saveformat, bbox_inches='tight')
         plt.close()
     else:
         plt.show()
+# %%

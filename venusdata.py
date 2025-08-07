@@ -78,10 +78,15 @@ class Planet:
         print(f'This is the {self.run} dataset created by {self.model.upper()}')
 
     def load_file(self, fn):
-        """ Loads a netCDF file using the netCDF4 package and stores in object
+        """ Loads a netCDF file using the xarray package and stores in object
             Lists dictionary key, name, dimensions, and shape
             of each data cube and stores text in a reference list"""
-        ds = xr.open_dataset(fn, decode_cf=False)
+        if isinstance(fn, str):
+            ds = xr.open_dataset(fn, decode_cf=False)
+        elif isinstance(fn, list):
+            ds = xr.open_mfdataset(fn, combine='nested', concat_dim='time_counter', decode_cf=False)
+        else:
+            print('Improper filename input, must be string or list')
         reflist = []
         str1 = 'File contains:'
         print(str1)
