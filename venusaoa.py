@@ -110,7 +110,7 @@ def ageline(plobject, coords=(-0., -0.), sourcelev=22, linelev=30, trange=(4000,
     return ageo
 
 # %%
-def tracerline(plobject, coords=(-0., -0.), sourcelev=22, line_lev=30, trange=(4000,4499),
+def tracerline(plobject, coords=(-0., -0.), sourcelev=22, linelev=30, trange=(4000,4499),
             save=False, saveformat='png', savename='age_line.png'):
 
     line_lat = np.where(plobject.lats==coords[0])[0][0]
@@ -120,8 +120,8 @@ def tracerline(plobject, coords=(-0., -0.), sourcelev=22, line_lev=30, trange=(4
 
     fig, ax = plt.subplots(figsize=(6,6))
     plt.plot(ageo[:,sourcelev], color='b', label=f'h={plobject.heights[sourcelev]} km')
-    plt.plot(ageo[:,line_lev], color='r', label=f'h={plobject.heights[line_lev]} km')
-    plt.title(f'Tracer concentration at h={plobject.heights[line_lev]} km, \
+    plt.plot(ageo[:,linelev], color='r', label=f'h={plobject.heights[linelev]} km')
+    plt.title(f'Tracer concentration at h={plobject.heights[linelev]} km, \
               lat={plobject.lats[line_lat]}, \
               lon={plobject.lons[line_lon]}')
     plt.xlabel('Simulation time')

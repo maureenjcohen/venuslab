@@ -322,7 +322,7 @@ def animate_plume(plobject, key, lev, t0, tf, n=2,
     'vmin': 0., # Min of plotted frames
     'vmax': cube[t0:tf,:,:].max(), # Max of plotted frames
     'cmap': 'viridis',
-    'extend': 'both'
+    'extend': 'both':
     }
  
     quiv_args = {
