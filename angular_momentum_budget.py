@@ -186,3 +186,9 @@ class AngularMomentumBudget(Simulation):
         zm_term = self.zonal_mean(self.w_prime_m_prime_tmean) * (self.radius**2)
         d_zm_term = np.gradient(zm_term)
         self.tv_term = - d_zm_term / ((self.radius**2) * self.d_z)
+
+# %%
+if __name__ == "__main__":
+
+    sim_data = AngularMomentumBudget()
+    sim_data.load_file(fpath)
