@@ -322,7 +322,7 @@ def animate_plume(plobject, key, lev, t0, tf, n=2,
     'vmin': 0., # Min of plotted frames
     'vmax': cube[t0:tf,:,:].max(), # Max of plotted frames
     'cmap': 'viridis',
-    'extend': 'both':
+    'extend': 'neither'
     }
  
     quiv_args = {
@@ -348,7 +348,7 @@ def animate_plume(plobject, key, lev, t0, tf, n=2,
     ani = animation.FuncAnimation(fig, animate, frames=range(t0,tf), interval=200, repeat=False)
 
     #Define the colorbar. The colorbar method needs a mappable object from which to take the colorbar
-    cbar = plt.colorbar(ax.contourf(plobject.lons, plobject.lats, cube[35,:,:], **plot_args))
+    cbar = plt.colorbar(ax.contourf(plobject.lons, plobject.lats, cube[tf,:,:], **plot_args))
     cbar.set_label(unit, color='black')
     cbar.ax.yaxis.set_tick_params(color='black')
     plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='black')
