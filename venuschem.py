@@ -20,7 +20,13 @@ def summ_stats(plobject, key, lev, t0, tf, savename='stats.png',
     cube = plobject.data[key][t0:tf,lev,:,:]
     title_name = cube.long_name or cube.name
     title_height = np.round(plobject.heights[lev],2)
-    cube = cube*1e6
+    if key=='n2':
+        cube = cube*100
+        unit = '%'
+    else:
+        cube = cube*1e6
+        unit = 'ppm'
+
     std = cube.std(dim='time_counter',skipna=True, keep_attrs=True)
     avg = cube.mean(dim='time_counter', skipna=True, keep_attrs=True)
 
@@ -30,7 +36,7 @@ def summ_stats(plobject, key, lev, t0, tf, savename='stats.png',
     ax1.set_xlabel('Longitude / deg')
     ax1.set_ylabel('Latitude / deg')
     cbar1 = plt.colorbar(abd_plot, orientation='horizontal', ax=ax1)
-    cbar1.set_label('ppm')
+    cbar1.set_label(unit)
 
     std_plot = ax2.contourf(plobject.lons, plobject.lats, 100*std/avg, cmap='copper')
     ax2.set_title(f'Coeff of variation in {title_name} at {title_height} km')
@@ -127,5 +133,9 @@ def fig11_compare(plobject, lev=18, trange=(0, 20), key='co',
     ax.set_ylabel('Zonal mean CO abundance / ppm')
     ax.set_ylim([4,12])
     ax.set_title(f'{cube_name} profiles at {height} km')
-    plt.show()
+    if save==True:
+        plt.savefig(savepath + savename, format=sformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
 # %%

@@ -286,7 +286,7 @@ def animate_globe(data, lev, heights, tf, t0=0, i=0, j=30,
     # ani.save('myanimation.gif', writer='pillow') #alternative
 
 # %%
-def animate_plume(plobject, key, lev, t0, tf, n=2,
+def animate_plume(plobject, key, lev, t0, tf, n=2, qscale=0.5,
                   savepath='/exomars/projects/mc5526/VPCM_volcanic_plumes/scratch_plots/'):
 
     """ Input:  plobject: Planet class object containing the data
@@ -328,7 +328,7 @@ def animate_plume(plobject, key, lev, t0, tf, n=2,
     quiv_args = {
     'angles': 'xy',
     'scale_units': 'xy',
-    'scale': 0.5,
+    'scale': qscale,
     'color': 'white'
     }
     
@@ -339,7 +339,7 @@ def animate_plume(plobject, key, lev, t0, tf, n=2,
                    v[frame,::n,::n], **quiv_args)
     
     ax.quiverkey(ax.quiver(X[::n, ::n], Y[::n, ::n], -u[0,::n,::n],
-                   v[0,::n,::n], **quiv_args), X=0.9, Y=1.05, U=10, label='%s m/s' %str(10),
+                   v[0,::n,::n], **quiv_args), X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
                  labelpos='E', coordinates='axes', color='black')
     ax.set_title(f'{cube_name}, ' + str(height) + ' km', color='black', y=1.05, fontsize=14)
     ax.set_xlabel('Longitude / deg')
@@ -347,8 +347,10 @@ def animate_plume(plobject, key, lev, t0, tf, n=2,
     # Create the animation
     ani = animation.FuncAnimation(fig, animate, frames=range(t0,tf), interval=200, repeat=False)
 
+    mask = np.where(cube >= cube[t0:tf].max())
+    start_time = mask[0][0]
     #Define the colorbar. The colorbar method needs a mappable object from which to take the colorbar
-    cbar = plt.colorbar(ax.contourf(plobject.lons, plobject.lats, cube[tf,:,:], **plot_args))
+    cbar = plt.colorbar(ax.contourf(plobject.lons, plobject.lats, cube[start_time,:,:], **plot_args))
     cbar.set_label(unit, color='black')
     cbar.ax.yaxis.set_tick_params(color='black')
     plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='black')
