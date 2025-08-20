@@ -366,6 +366,40 @@ class AngularMomentumBudget(Simulation):
         else:
             plt.show()
 
+    def plot_vertical_mean(self, lev1, lev2, save):
+        """ Calculate thickness-weighted vertical mean between two model levels """
+        if not hasattr(self, 'residual'):
+            self.calc_residual()
+        thickness = xr.DataArray(np.diff([item*1e3 for item in self.heights])) 
+        # Spacing between levels in meters - to be used as weighting
+        mh_term_vmean = np.mean(self.mh_term[lev1:lev2,:].weighted(thickness[lev1:lev2]).mean(dim='presnivs'),axis=-1)
+        mv_term_vmean = np.mean(self.mv_term[lev1:lev2,:].weighted(thickness[lev1:lev2]).mean(dim='presnivs'),axis=-1)
+        sh_term_vmean = np.mean(self.sh_term[lev1:lev2,:].weighted(thickness[lev1:lev2]).mean(dim='presnivs'),axis=-1)
+        sv_term_vmean = np.mean(self.sv_term[lev1:lev2,:].weighted(thickness[lev1:lev2]).mean(dim='presnivs'),axis=-1)
+        th_term_vmean = np.mean(self.th_term[lev1:lev2,:].weighted(thickness[lev1:lev2]).mean(dim='presnivs'),axis=-1)
+        tv_term_vmean = np.mean(self.tv_term[lev1:lev2,:].weighted(thickness[lev1:lev2]).mean(dim='presnivs'),axis=-1)
+        change_in_AM_vmean = np.mean(self.change_in_AM[lev1:lev2,:].weighted(thickness[lev1:lev2]).mean(dim='presnivs'),axis=-1)
+        residual_vmean = np.mean(self.residual[lev1:lev2,:].weighted(thickness[lev1:lev2]).mean(dim='presnivs'),axis=-1)
+
+        fig, ax = plt.subplots(figsize=(8,6))
+        ax.plot(self.lats[1:-2], mh_term_vmean[1:-2], color='red', label='Mean horizontal advection')
+        ax.plot(self.lats[1:-2], mv_term_vmean[1:-2], color='red', linestyle='dashed', label='Mean vertical advection')
+        ax.plot(self.lats[1:-2], sh_term_vmean[1:-2], color='blue', label='Stationary horizontal eddy')
+        ax.plot(self.lats[1:-2], sv_term_vmean[1:-2], color='blue', linestyle='dashed', label='Stationary vertical eddy')
+        ax.plot(self.lats[1:-2], th_term_vmean[1:-2], color='green', label='Transient horizontal eddy')
+        ax.plot(self.lats[1:-2], tv_term_vmean[1:-2], color='green', linestyle='dashed', label='Transient vertical eddy')
+        ax.plot(self.lats[1:-2], change_in_AM_vmean[1:-2], color='black', label='Change in AM with time')
+        ax.plot(self.lats[1:-2], residual_vmean[1:-2], color='black', linestyle='dashed', label='Residual')
+        ax.set_xlabel('Latitude / deg')
+        ax.set_ylabel('Angular momentum / J m-3')
+        ax.set_title(f'Angular momentum terms from {np.round(self.heights[lev1],2)} to {np.round(self.heights[lev2],2)} km', fontsize=14)
+        ax.legend(loc='lower center', bbox_to_anchor=(0.5, -0.25), ncol=4,
+                fancybox=True)
+        if save==True:
+            plt.savefig(savepath + f'AAM_terms__vmean{sim.heights[lev1]}_{sim.heights[lev2]}km.png', format='png', bbox_inches='tight')
+        else:
+            plt.show()
+
 
 # %%
 if __name__ == "__main__":
