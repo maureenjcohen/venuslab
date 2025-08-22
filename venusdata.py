@@ -208,6 +208,7 @@ class Planet:
         """ Calculate local time array for each time output
             and add to Planet object"""
         self.local_time = all_times(self)
+        self.time_labels = np.arange(0,24,24/len(self.lons))
 
     def total_area(self):
         """ Calculate total surface area in m2"""
@@ -241,7 +242,7 @@ def local_time(plobject, time_slice=-1, silent='no'):
     # aka the equator
     rad_toa = plobject.data['tops']
     # Solar radiation at top of atmosphere
-    subsol = np.argmax(rad_toa[time_slice,equator,:])
+    subsol = rad_toa[time_slice,equator,:].argmax(dim='lon')
     # Find column number of longitude where solar
     # radiation is currently at a maximum
     if silent=='no':
@@ -254,7 +255,7 @@ def local_time(plobject, time_slice=-1, silent='no'):
     # Array of hour coordinates with same
     # dimension as longitude coordinates
     roll_step = int(subsol - (len(plobject.lons)/2))
-    new_hours = list(np.roll(hours, roll_step))
+    new_hours = list(np.roll(hours, -roll_step))
 
     return new_hours
 
@@ -275,7 +276,10 @@ def all_times(plobject):
 def local_mean(plobject, key, lev, trange):
 
     """ Calculate the mean of the input field with respect
-        to the local time, i.e. mean over longitudes   """
+        to the local time, i.e. mean over longitudes   
+        
+        Output array has local noon in the 0th column, so needs
+        to be shifted when plotting with noon at the centre  """
     try:
         plobject.local_time
     except AttributeError:
@@ -286,13 +290,16 @@ def local_mean(plobject, key, lev, trange):
     data = plobject.data[key][trange[0]:trange[1],lev,:,:]
     times_needed = plobject.local_time[trange[0]:trange[1]]
     data_list = []
-    for t in range(0,len(trange)):
-        noon_col = np.where(times_needed[t]==12.0[0][0])
-        shifted_data = np.roll(data[t,:,:], -noon_col, axis=1)
+    for t in range(0,trange[1]):
+        noon_col = np.where(times_needed[t]==12.0)[0][0]
+        shifted_data = np.roll(data[t,:,:], noon_col, axis=1)
         data_list.append(shifted_data)
 
     shifted_array = np.array(data_list)
     meaned_data = np.mean(shifted_array, axis=0)
-
-    return meaned_data
+    centred_array = np.roll(meaned_data, int(len(plobject.lons)/2), axis=-1)
+ 
+    return centred_array
     
+
+# %%

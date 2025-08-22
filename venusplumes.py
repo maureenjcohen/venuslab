@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # %%
-def find_plume(plobject, lev):
+def find_plume(plobject, lev, key):
     """ Find array indices of maximum tracer value """
 
-    cube = plobject.data['aoa'][:,lev,:,:]
+    cube = plobject.data[key][:,lev,:,:]
     # Extract age of air tracer cube at desired model level
     plume_mmr = cube.max() 
     # What is the peak mmr of the plume injection?
@@ -27,7 +27,7 @@ def find_plume(plobject, lev):
 
 
 # %%
-def dispersal_time(plobject, lev,
+def dispersal_time(plobject, key, lev,
                    save=False,
                    savename='plume_dispersal.png',
                    savepath='/exomars/projects/mc5526/VPCM_volcanic_plumes/scratch_plots/',
@@ -35,7 +35,7 @@ def dispersal_time(plobject, lev,
     """ Find time in seconds/hours for the tracer value in the
         gridbox to return to the background value       """
     
-    cube = plobject.data['aoa'][:,lev,:,:]
+    cube = plobject.data[key][:,lev,:,:]
     # Extract age of air tracer data at desired model level
     start_time, end_time, lat_idx, lon_idx = find_plume(plobject, lev)
     # Get time and space indices of plume
@@ -81,13 +81,13 @@ def dispersal_time(plobject, lev,
     plt.show()
 
 # %%
-def dispersal_map(plobject, lev, threshold_val,
+def dispersal_map(plobject, lev, key, threshold_val,
                    save=False,
                    savename='dispersal_map.png',
                    savepath='/exomars/projects/mc5526/VPCM_volcanic_plumes/scratch_plots/',
                    sformat='png'):
     
-    cube = plobject.data['aoa'][:,lev,:,:]
+    cube = plobject.data[key][:,lev,:,:]
     interval = np.diff(cube.time_counter.values)[0]
     # Extract age of air tracer data at desired model level
     start_time, end_time, lat_idx, lon_idx = find_plume(plobject, lev)
