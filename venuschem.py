@@ -132,7 +132,7 @@ def fig11_compare(plobject, lev=18, trange=(0, 20), key='co',
     ax.grid(axis='y', linestyle='dashed', color='grey', alpha=0.5)
     ax.set_xlabel('Latitude / deg')
     ax.set_ylabel('Zonal mean CO abundance / ppm')
-    ax.set_ylim([4,12])
+    ax.set_ylim([14,22])
     ax.set_title(f'{cube_name} profiles at {height} km')
     if save==True:
         plt.savefig(savepath + savename, format=sformat, bbox_inches='tight')
@@ -171,11 +171,11 @@ def chem_time(plobject, key, lev, savename='species_time_series.png',
     """ Plot area-weighted global mean of {key} species at {lev} over time """
     cube = plobject.data[key][:,lev,:,:]*1e6
     weights = plobject.data['aire']
-    mean_cube = cube.weighted(weights).mean(dim=['lon','lat'])
-    print(mean_cube.shape)
+    mean_cube = cube.weighted(weights).mean(dim=['lon','lat'], skipna=True, keep_attrs=True)
+    print(mean_cube.values[0])
     interval = np.diff(cube.time_counter.values)[0]
     time_axis = np.arange(0, cube.shape[0])*(interval/(24*60*60))
-
+    print(time_axis.shape)
     fig, ax = plt.subplots(figsize=(8,6))
     ax.plot(time_axis, mean_cube)
     ax.set_title(f'Mean global {key.upper()} at {np.round(plobject.heights[lev],2)} km')

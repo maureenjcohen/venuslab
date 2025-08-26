@@ -286,7 +286,7 @@ def animate_globe(data, lev, heights, tf, t0=0, i=0, j=30,
     # ani.save('myanimation.gif', writer='pillow') #alternative
 
 # %%
-def animate_plume(plobject, key, lev, t0, tf, n=2, qscale=0.5,
+def animate_plume(plobject, key, lev, t0, tf, n=4, qscale=0.5,
                   savepath='/exomars/projects/mc5526/VPCM_volcanic_plumes/scratch_plots/'):
 
     """ Input:  plobject: Planet class object containing the data
@@ -294,13 +294,17 @@ def animate_plume(plobject, key, lev, t0, tf, n=2, qscale=0.5,
                 lev: level to be visualised 
                 tf: final frame
                 t0: first frame  
-                savepath: where to save the output """
+                savepath: where to save the output 
+                
+                For upper atmos, try n=4, qscale=4"""
     
     height = np.round(plobject.heights[lev],2)
     # Get height in km rounded to 2 decimal points (for title)
     cube_name = plobject.data[key].long_name
     cube = plobject.data[key][:,lev,:,:]
     # Extract data for desired altitude
+    interval = np.diff(cube.time_counter.values)[0]/(60*60)
+    time_axis = np.round(np.arange(0,tf-t0)*interval,0)
 
     if key=='aoa':
         cube = cube*1e9
@@ -308,6 +312,9 @@ def animate_plume(plobject, key, lev, t0, tf, n=2, qscale=0.5,
     elif key=='age':
         cube = cube/(60*60*24*360)
         unit = 'years'
+    else:
+        cube = cube*1e6
+        unit = 'vmr ppm'
 
     u = plobject.data['vitu'][:,lev,:,:]
     v = plobject.data['vitv'][:,lev,:,:]
@@ -319,7 +326,7 @@ def animate_plume(plobject, key, lev, t0, tf, n=2, qscale=0.5,
 
     # Dictionary of values for plot frames
     plot_args = {
-    'vmin': 0., # Min of plotted frames
+    'vmin': cube[t0:tf,:,:].min(), # Min of plotted frames
     'vmax': cube[t0:tf,:,:].max(), # Max of plotted frames
     'cmap': 'viridis',
     'extend': 'neither'
@@ -337,6 +344,8 @@ def animate_plume(plobject, key, lev, t0, tf, n=2, qscale=0.5,
         cf = ax.contourf(plobject.lons, plobject.lats, cube[frame,:,:], **plot_args)
         q = ax.quiver(X[::n, ::n], Y[::n, ::n], -u[frame,::n,::n],
                    v[frame,::n,::n], **quiv_args)
+        ax.set_title(f'{cube_name}, ' + str(height) + f' km, {time_axis[frame-t0]} hrs', color='black', y=1.05, fontsize=14)
+
     
     ax.quiverkey(ax.quiver(X[::n, ::n], Y[::n, ::n], -u[0,::n,::n],
                    v[0,::n,::n], **quiv_args), X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
@@ -361,4 +370,109 @@ def animate_plume(plobject, key, lev, t0, tf, n=2, qscale=0.5,
     ani.save(savepath + f'{key}_{height}km.mp4', writer='ffmpeg')
     # ani.save('myanimation.gif', writer='pillow') #alternative
 
+# %%
+def animate_chem_plume(plobject, lev, t0, tf, n=4, qscale=1,
+                  savepath='/exomars/projects/mc5526/VPCM_volcanic_plumes/scratch_plots/'):
+
+    """ Input:  plobject: Planet class object containing the data
+                key: Dict key of data, either 'age' or 'aoa'
+                lev: level to be visualised 
+                tf: final frame
+                t0: first frame  
+                savepath: where to save the output """
+    
+    height = np.round(plobject.heights[lev],2)
+    # Get height in km rounded to 2 decimal points (for title)
+    h2o_cube = plobject.data['h2o'][:,lev,:,:]*1e6
+    co_cube = plobject.data['co'][:,lev,:,:]*1e6
+    ocs_cube = plobject.data['ocs'][:,lev,:,:]*1e6
+    hcl_cube = plobject.data['hcl'][:,lev,:,:]*1e6
+    # Extract data for desired altitude
+
+    u = plobject.data['vitu'][:,lev,:,:]
+    v = plobject.data['vitv'][:,lev,:,:]
+    # Extract zonal and meridional wind for desired altitude
+
+    fig, ax = plt.subplots(2,2,figsize=(16, 10), sharex=True, sharey=True)
+    # Create figure
+    X, Y = np.meshgrid(plobject.lons, plobject.lats)
+
+    interval = np.diff(h2o_cube.time_counter.values)[0]/(60*60)
+    time_axis = np.round(np.arange(0,tf-t0)*interval,0)
+ 
+    quiv_args = {
+    'angles': 'xy',
+    'scale_units': 'xy',
+    'scale': qscale,
+    'color': 'black'
+    }
+    
+    # Define an update function that will be called for each frame
+    def animate(frame):
+        # H2O plot
+        cf_h2o = ax[0,0].contourf(plobject.lons, plobject.lats, h2o_cube[frame,:,:], 
+                                  cmap='Blues', 
+                                  vmin=np.min(h2o_cube[t0:tf,:,:]), vmax=45.0)
+        q1 = ax[0,0].quiver(X[::n, ::n], Y[::n, ::n], -u[frame,::n,::n],
+                   v[frame,::n,::n], **quiv_args)
+        ax[0,0].quiverkey(ax[0,0].quiver(X[::n, ::n], Y[::n, ::n], -u[0,::n,::n],
+                   v[0,::n,::n], **quiv_args), X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
+                 labelpos='E', coordinates='axes', color='black')
+        ax[0,0].set_title('H2O', color='black', y=1.05, fontsize=14)
+        ax[0,0].set_ylabel('Latitude / deg')
+
+        # CO plot
+        cf_co = ax[0,1].contourf(plobject.lons, plobject.lats, co_cube[frame,:,:], 
+                                  cmap='Purples', vmin=np.min(co_cube[t0:tf,:,:]), vmax=37.5)
+        q2 = ax[0,1].quiver(X[::n, ::n], Y[::n, ::n], -u[frame,::n,::n],
+                   v[frame,::n,::n], **quiv_args)
+        ax[0,1].quiverkey(ax[0,1].quiver(X[::n, ::n], Y[::n, ::n], -u[0,::n,::n],
+                   v[0,::n,::n], **quiv_args), X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
+                 labelpos='E', coordinates='axes', color='black')
+        ax[0,1].set_title('CO', color='black', y=1.05, fontsize=14)
+
+        # OCS plot
+        cf_ocs = ax[1,0].contourf(plobject.lons, plobject.lats, ocs_cube[frame,:,:], 
+                                  cmap='YlOrBr', vmin=np.min(ocs_cube[t0:tf,:,:]), vmax=4.5)
+        q3 = ax[1,0].quiver(X[::n, ::n], Y[::n, ::n], -u[frame,::n,::n],
+                   v[frame,::n,::n], **quiv_args)
+        ax[1,0].quiverkey(ax[1,0].quiver(X[::n, ::n], Y[::n, ::n], -u[0,::n,::n],
+                   v[0,::n,::n], **quiv_args), X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
+                 labelpos='E', coordinates='axes', color='black')
+        ax[1,0].set_title('OCS', color='black', y=1.05, fontsize=14)
+        ax[1,0].set_ylabel('Latitude / deg')
+        ax[1,0].set_xlabel('Longitude / deg')
+
+        # HCl plot
+        cf_hcl = ax[1,1].contourf(plobject.lons, plobject.lats, hcl_cube[frame,:,:], 
+                                  cmap='Reds', vmin=np.min(hcl_cube[t0:tf,:,:]), vmax=0.6)
+        q4 = ax[1,1].quiver(X[::n, ::n], Y[::n, ::n], -u[frame,::n,::n],
+                   v[frame,::n,::n], **quiv_args)
+        ax[1,1].quiverkey(ax[1,1].quiver(X[::n, ::n], Y[::n, ::n], -u[0,::n,::n],
+                   v[0,::n,::n], **quiv_args), X=0.9, Y=1.05, U=qscale*10, label='%s m/s' %str(qscale*10),
+                 labelpos='E', coordinates='axes', color='black')
+        ax[1,1].set_title('HCl', color='black', y=1.05, fontsize=14)
+        ax[1,1].set_xlabel('Longitude / deg')
+        fig.suptitle(f'Volcanic plume at {height} km, {time_axis[frame-t0]} hrs', y=1.01, fontsize=24)
+
+    # Create the animation
+    ani = animation.FuncAnimation(fig, animate, frames=range(t0,tf), interval=200, repeat=False)
+    
+    cbar_h2o = plt.colorbar(ax[0,0].contourf(plobject.lons, plobject.lats, h2o_cube[t0,:,:], 
+                                             cmap='Blues', vmin=np.min(h2o_cube[t0:tf,:,:]), vmax=45.0), 
+                                             ax=ax[0,0])
+    cbar_h2o.set_label('ppm', color='black')
+    cbar_co = plt.colorbar(ax[0,1].contourf(plobject.lons, plobject.lats, co_cube[t0,:,:], 
+                                             cmap='Purples', vmin=np.min(co_cube[t0:tf,:,:]), vmax=37.5), ax=ax[0,1])
+    cbar_co.set_label('ppm', color='black')
+    cbar_ocs = plt.colorbar(ax[1,0].contourf(plobject.lons, plobject.lats, ocs_cube[t0,:,:], 
+                                             cmap='YlOrBr', vmin=np.min(ocs_cube[t0:tf,:,:]), vmax=4.5), ax=ax[1,0])
+    cbar_ocs.set_label('ppm', color='black')
+    cbar_hcl = plt.colorbar(ax[1,1].contourf(plobject.lons, plobject.lats, hcl_cube[t0,:,:], 
+                                             cmap='Reds', vmin=np.min(hcl_cube[t0:tf,:,:]), vmax=0.6), ax=ax[1,1])
+    cbar_hcl.set_label('ppm', color='black')
+
+    # Save the animation as an mp4 file
+    ani.save(savepath + f'deep_plume_{height}km.mp4', writer='ffmpeg')
+    # ani.save('myanimation.gif', writer='pillow') #alternative
 # %%
