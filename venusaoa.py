@@ -136,7 +136,7 @@ def tracerline(plobject, coords=(-0., -0.), sourcelev=22, linelev=30, trange=(40
 
 # %%
 def zmage(plobject, hmin=0, hmax=20, time_slice=-2, convert2yr=True,
-          cmin=11.64, cmax=11.91,
+          levels=None,
          save=False, saveformat='png', savename='zmage.png'):
 
     """ Input: numpy array for age of air 
@@ -147,7 +147,6 @@ def zmage(plobject, hmin=0, hmax=20, time_slice=-2, convert2yr=True,
     ageo = plobject.data['age']
     ageo = ageo[time_slice,:,:,:]
     zmageo = np.mean(ageo, axis=-1)
-    levels = np.linspace(cmin, cmax, 40)
 
     if convert2yr==True:
         zmageo = zmageo/(60*60*24*360)
@@ -156,16 +155,15 @@ def zmage(plobject, hmin=0, hmax=20, time_slice=-2, convert2yr=True,
         cunit = 'seconds' 
  
     zmslice = zmageo[hmin:hmax,:]
- #   levels = np.linspace(np.min(zmslice),np.max(zmslice),40)
     
     fig = plt.figure(figsize=(6, 6))
     plt.contourf(plobject.lats, plobject.heights[hmin:hmax], 
                  zmslice, 
-#                 levels=levels,
+                 levels=levels,
                  cmap='cividis')
     plt.title('Age of air (zonal mean)')
-    plt.xlabel('Latitude [deg]')
-    plt.ylabel('Height [km]')
+    plt.xlabel('Latitude / deg')
+    plt.ylabel('Height / km')
     cbar = plt.colorbar()
     cbar.set_label(f'{cunit}')
     if save==True:

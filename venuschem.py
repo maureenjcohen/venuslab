@@ -256,3 +256,36 @@ def chem_local_mean(plobject, key, lev, trange,
         plt.show()    
 
 # %%
+def chem_sphere(plobject, key, lev, time_slice,
+                i=0, j=0, 
+                savename='projection.png',
+                savepath='/exomars/projects/mc5526/VPCM_full_chemistry_runs/scratch_plots/',
+                save=False, sformat='png'):
+    """ Projection onto a sphere of 2-D chemistry output at level [lev] """
+    cube = plobject.data[key][time_slice,lev,:,:]
+    cube_name = cube.long_name or cube.name
+    cube = cube*1e6
+    level_name = np.round(plobject.heights[lev],2)
+
+    ortho = ccrs.Orthographic(central_longitude=i, central_latitude=j)
+    # Specify orthographic projection centered at lon/lat i, j
+    fig = plt.figure(figsize=(8, 6))
+    ax = plt.axes(projection=ortho)
+    ax.set_global()
+    # Create the figure
+    levels=np.linspace(cube.min(), cube.max(), 30)
+    plimg = ax.contourf(plobject.lons, plobject.lats, cube, transform=ccrs.PlateCarree(), 
+                        levels=levels,
+                        cmap='plasma')
+    ax.set_title(f'{cube_name.upper()}, {level_name} km')
+    ax.gridlines(draw_labels=True, linewidth=1.5, color='silver', alpha=0.5)
+    cbar = fig.colorbar(plimg, orientation='vertical', extend='max')
+    cbar.set_label('ppm')
+    cbar.ax.yaxis.set_tick_params(color='black')
+    plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='black')
+    if save==True:
+        plt.savefig(savepath + savename, format=sformat, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()  
+# %%

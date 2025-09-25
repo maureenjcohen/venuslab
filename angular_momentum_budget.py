@@ -123,7 +123,7 @@ class Simulation:
 
 # %%
 class AngularMomentumBudget(Simulation):
-    """ Zonal component of axial angular moment budget in spherical coordinates
+    """ Zonal component of axial angular momentum budget in spherical coordinates
         Vertical coordinate is altitude (z)
         Eq. 2 from Sergeev et al. 2022, doi: 10.3847/PSJ/ac83be 
         
