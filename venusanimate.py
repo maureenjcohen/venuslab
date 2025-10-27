@@ -10,7 +10,7 @@ from venuspoles import add_cycl_point
 
 # %%
 def sphere(inputarray, lons, lats, i, j, inputcols, ptitle, htitle, cunit,
-           cmin, cmax):
+           levels):
 
     """ Creates a plot of a 2-D data array projected onto a sphere
         inputarray: The input data array. Must be 2-D
@@ -33,9 +33,8 @@ def sphere(inputarray, lons, lats, i, j, inputcols, ptitle, htitle, cunit,
     ax = plt.axes(projection=ortho)
     ax.set_global()
     # Create the figure
-    levels=np.linspace(cmin, cmax, 30)
     plimg = ax.contourf(lon, lat, inputarray, transform=ccrs.PlateCarree(), 
-    #                    levels=levels,
+                        levels=levels,
                         cmap=inputcols)
     ax.set_title(ptitle + ', ' + htitle, color='white', y=1.05, fontsize=14)
     ax.gridlines(draw_labels=True, linewidth=1.5, color='silver', alpha=0.5)
