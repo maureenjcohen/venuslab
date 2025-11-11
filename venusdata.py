@@ -242,20 +242,20 @@ def local_time(plobject, time_slice=-1, silent='no'):
     # aka the equator
     rad_toa = plobject.data['tops']
     # Solar radiation at top of atmosphere
-    subsol = rad_toa[time_slice,equator,:].argmax(dim='lon')
+    subsol = int(rad_toa[time_slice,equator,:].argmax(dim='lon').values)
     # Find column number of longitude where solar
     # radiation is currently at a maximum
     if silent=='no':
-        print('Local noon is at col ' + str(subsol))
+        print('Local noon is at col ' + str((subsol)))
         print('Local noon is at lon ' + str(plobject.lons[subsol]))
     else:
         pass
     dt = 24/len(plobject.lons)
-    hours = np.arange(0,24,dt)
+    hours = np.arange(24,0,-dt)
     # Array of hour coordinates with same
     # dimension as longitude coordinates
     roll_step = int(subsol - (len(plobject.lons)/2))
-    new_hours = list(np.roll(hours, -roll_step))
+    new_hours = list(np.roll(hours, roll_step))
 
     return new_hours
 
@@ -290,9 +290,9 @@ def local_mean(plobject, key, lev, trange):
     data = plobject.data[key][trange[0]:trange[1],lev,:,:]
     times_needed = plobject.local_time[trange[0]:trange[1]]
     data_list = []
-    for t in range(0,trange[1]):
+    for t in range(0,times_needed.shape[0]):
         noon_col = np.where(times_needed[t]==12.0)[0][0]
-        shifted_data = np.roll(data[t,:,:], noon_col, axis=1)
+        shifted_data = np.roll(data[t,:,:], -noon_col, axis=1)
         data_list.append(shifted_data)
 
     shifted_array = np.array(data_list)
@@ -302,4 +302,23 @@ def local_mean(plobject, key, lev, trange):
     return centred_array
     
 
+# %%
+def local_mean_profile(plobject, key, lt, lat, trange):
+    """ Mean vertical profile of {key} at local time {lt} and latitude {lat}
+        e.g. mean at 18 hours"""
+    data = plobject.data[key][trange[0]:trange[1],:,lat,:]
+    print(data.shape)
+    times_needed = plobject.local_time[trange[0]:trange[1]]
+    data_list = []
+    for t in range(0,times_needed.shape[0]):
+        col = np.where(times_needed[t]==lt)[0][0]
+        shifted_data = np.roll(data[t,:,:], -col, axis=1)
+        data_list.append(shifted_data)
+    
+    shifted_array = np.array(data_list)
+    print(shifted_array.shape)
+    meaned_data = np.mean(shifted_array[:,:,0], axis=0)
+    print(meaned_data.shape)
+
+    return meaned_data
 # %%

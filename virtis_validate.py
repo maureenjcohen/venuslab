@@ -3,7 +3,7 @@
 ## Filepaths
 # %%
 datadir = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/ALL_orbits/'
-common_prefix = 'Accumulated_Grids_Data_VI0_CO_bandratio_'
+common_prefix = 'Accumulated_Grids_DATA_VI0_CO_bandratio_'
 case_dict = {
 'case1' : '2.29_2.32_152-158K',
 'case2' : '2.29_2.32_interpol1_152-158K',
@@ -15,7 +15,8 @@ case_dict = {
 'case8' : '2.30_2.32_interpol1_150-165K',
 'case9' : '2.29_2.32_interpol1_152-158K_ALLexp'}
 
-test_orbits = ['VI0093']
+test_orbits = ['VI0066','VI0093','VI0105', 'VI0153']
+# VI0901 is a hot orbit
 test_orbs = ['VI0093_05']
 
 ## Imports
@@ -46,17 +47,28 @@ class Vgeo:
     def counts(self):
         """ Count number of observations per pixel (i.e., non-nan values) 
             Return indices of pixels with max counts            """
-        mask = np.count_nonzero(~np.isnan(self.arr))
-        lat_max, lon_max = mask[0][0], mask[0][1]
+        count = np.count_nonzero(~np.isnan(self.arr), axis=-1)
+        lat_max = np.where(count==np.max(count))[0]
+        lon_max = np.where(count==np.max(count))[1]
         return lat_max, lon_max
-
+    
+    def orbit_counts(self, orbit):
+        """ Count number of observations per pixel for a given orbit """
+        band_names = [x for x in self.lib['band names'] if x.split('_')[0] == orbit]
+        idx = [self.lib['band names'].index(x) for x in self.lib['band names'] if x in band_names]
+ 
+        count = np.count_nonzero(~np.isnan(self.arr[:,:,idx[0]:idx[-1]+1]), axis=-1)
+        lat_max = np.where(count==np.max(count))[0]
+        lon_max = np.where(count==np.max(count))[1]
+        return lat_max, lon_max
 ## Functions
 # %%
 def convert_rad_to_CO(arr):
     """ EXTREMELY ROUGH conversion of radiance ratio to CO ppm
         Literally based on eyeballing Fig. 6 in Tsang+2009"""
     
-    ppm = (arr - 1.344) / 0.0464
+    #ppm = (arr - 1.344) / 0.0464
+    ppm = arr
 
     return ppm
 
@@ -77,7 +89,7 @@ def orbit_obs(imobject, libobject, orbit, lat_idx, lon_idx):
 # %%
 def orbit(imobject, libobject, orbit,
           levels=np.arange(0,40,0.5),
-          plot=True, save=False,
+          plot=True, save=False, savename='orbit_placerholder',
           savepath='/exomars/projects/mc5526/VPCM_deep_atmos_CO/scratch_plots/'):
     """ Plot nanmean of one orbit onto a contourf """
     band_names = [x for x in libobject['band names'] if x.split('_')[0] == orbit]
@@ -99,10 +111,10 @@ def orbit(imobject, libobject, orbit,
         ax.set_xlabel('Longitude / pixels')
         ax.set_ylabel('Latitude / pixels')
         cbar = plt.colorbar(cf)
-        cbar.set_label('ppmv', color='black')
+        cbar.set_label('ratio', color='black')
 
         if save==True:
-            plt.savefig(savepath + 'virtis_validate_' + str(orbit) + '.png', format='png', bbox_inches='tight')
+            plt.savefig(savepath + 'virtis_validate_' + savename + '_' + str(orbit) + '.png', format='png', bbox_inches='tight')
 
         plt.show()
 
@@ -118,7 +130,7 @@ if __name__ == "__main__":
     for case in range(1, len(case_dict)+1):
         dict_key= 'case' + str(case)
         fn = pref + case_dict[dict_key]
-        proj = Vgeo(name=case_dict[dict_key], dat=fn+'.dat', hdr=fn+'.hdr')
+        proj = Vgeo(name=case_dict[dict_key], dat=fn+'.DAT', hdr=fn+'.HDR')
         projections.append(proj)
     print('Loaded {} v_geo_grid projections.'.format(len(projections)))
 
@@ -145,57 +157,60 @@ if __name__ == "__main__":
             orbit(imobject=proj.img,
                   libobject=proj.lib,
                   orbit=o,
+                  levels=np.arange(1.5,3.1,0.1),
                   plot=True,
-                  save=True)
+                  save=True,
+                  savename=proj.name)
     print('Test 2 completed: Orbits plotted for visual comparison.')
 
     # Test 3: Compare scatter in data
     for o in test_orbits:
-        idx_lat, idx_lon = projections[0].counts()
+        idx_lat, idx_lon = projections[0].orbit_counts(orbit=o)
         case1_points = orbit_obs(imobject=projections[0].img,
                                     libobject=projections[0].lib,
                                     orbit=o,
-                                    lat_idx=idx_lat,
-                                    lon_idx=idx_lon)
+                                    lat_idx=idx_lat[0],
+                                    lon_idx=idx_lon[0])
         case2_points = orbit_obs(imobject=projections[1].img,
                                     libobject=projections[1].lib,
                                     orbit=o,
-                                    lat_idx=idx_lat,
-                                    lon_idx=idx_lon)
+                                    lat_idx=idx_lat[0],
+                                    lon_idx=idx_lon[0])
         std_case1 = np.nanstd(case1_points)
         std_case2 = np.nanstd(case2_points)
         fig, ax = plt.subplots()
-        ax.scatter(range(len(case1_points)), case1_points, label='Case 1', alpha=0.7)
-        ax.scatter(range(len(case2_points)), case2_points, label='Case 2', alpha=0.7)
-        ax.set_title(f'Orbit {o} CO observations at pixel ({idx_lat}, {idx_lon})')
+        ax.scatter(range(len(case1_points)), case1_points, label=f'2.29 152-158K, std {str(np.round(std_case1,3))}', alpha=0.7)
+        ax.scatter(range(len(case2_points)), case2_points, label=f'2.29 152-158K + interpol, std {str(np.round(std_case2,3))}', alpha=0.7)
+        ax.set_title(f'Orbit {o} CO observations at pixel ({idx_lat[0]}, {idx_lon[0]})')
         ax.set_xlabel('Observation')
-        ax.set_ylabel('CO ppmv')
+        ax.set_ylabel('CO ratio')
         ax.legend()
         plt.savefig(f'/exomars/projects/mc5526/VPCM_deep_atmos_CO/scratch_plots/virtis_validate_scatter_{o}_1vs2.png', format='png', bbox_inches='tight')
         plt.show()
         print(f'Orbit {o} - Case 1 std: {std_case1:.2f}, Case 2 std: {std_case2:.2f}')
 
-        max_lat, max_lon = projections[6].counts()
+        max_lat, max_lon = projections[6].orbit_counts(orbit=o)
         case7_points = orbit_obs(imobject=projections[6].img,
                                     libobject=projections[6].lib,
                                     orbit=o,
-                                    lat_idx=idx_lat,
-                                    lon_idx=idx_lon)
+                                    lat_idx=max_lat[0],
+                                    lon_idx=max_lon[0])
         case8_points = orbit_obs(imobject=projections[7].img,
                                     libobject=projections[7].lib,
                                     orbit=o,
-                                    lat_idx=max_lat,
-                                    lon_idx=max_lon)
+                                    lat_idx=max_lat[0],
+                                    lon_idx=max_lon[0])
         std_case7 = np.nanstd(case7_points)
         std_case8 = np.nanstd(case8_points)
         fig, ax = plt.subplots()
-        ax.scatter(range(len(case7_points)), case7_points, label='Case 7', alpha=0.7)
-        ax.scatter(range(len(case8_points)), case2_points, label='Case 8', alpha=0.7)
-        ax.set_title(f'Orbit {o} CO observations at pixel ({max_lat}, {max_lon})')
+        ax.scatter(range(len(case7_points)), case7_points, label=f'2.30 150-165K, std {str(np.round(std_case7,3))}', alpha=0.7)
+        ax.scatter(range(len(case8_points)), case8_points, label=f'2.30 150-165K + interpol, std {str(np.round(std_case8,3))}', alpha=0.7)
+        ax.set_title(f'Orbit {o} CO observations at pixel ({max_lat[0]}, {max_lon[0]})')
         ax.set_xlabel('Observation')
-        ax.set_ylabel('CO ppmv')
+        ax.set_ylabel('CO ratio')
         ax.legend()
         plt.savefig(f'/exomars/projects/mc5526/VPCM_deep_atmos_CO/scratch_plots/virtis_validate_scatter_{o}_7vs8.png', format='png', bbox_inches='tight')
         plt.show()
         print(f'Orbit {o} - Case 7 std: {std_case1:.2f}, Case 8 std: {std_case2:.2f}')
     print('Test 3 completed: Scatter compared for selected orbits and pixels.')      
+# %%

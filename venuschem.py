@@ -243,12 +243,16 @@ def chem_local_mean(plobject, key, lev, trange,
     # Use function from venus data
  
     fig, ax = plt.subplots(figsize=(8,6))
-    cf = ax.contourf(np.arange(0,24,0.25), plobject.lats, centred_array*1e6, cmap='plasma')
+    cf = ax.contourf(np.arange(24,0,-0.25), plobject.lats, centred_array, cmap='plasma')
     ax.set_title(f'Local time mean of {key.upper()} at {np.round(plobject.heights[lev],2)} km')
     ax.set_xlabel('Local time / hours')
     ax.set_ylabel('Latitude / deg')
+    ax.set_xticks([6,12,18])
+    ax.set_xticklabels([18,12,6])
+   # ax.set_xticks([5,10,15,20])
+    # ax.set_xticklabels([20,15,10,5])
     cbar = plt.colorbar(cf)
-    cbar.set_label('ppm')
+    cbar.set_label('vmr')
     if save==True:
         plt.savefig(savepath + savename, format=sformat, bbox_inches='tight')
         plt.close()
@@ -263,9 +267,11 @@ def chem_sphere(plobject, key, lev, time_slice,
                 save=False, sformat='png'):
     """ Projection onto a sphere of 2-D chemistry output at level [lev] """
     cube = plobject.data[key][time_slice,lev,:,:]
+    new_cube, new_lon = add_cycl_point(cube, cube.lon, -1)
     cube_name = cube.long_name or cube.name
-    cube = cube*1e6
+    cube = new_cube
     level_name = np.round(plobject.heights[lev],2)
+
 
     ortho = ccrs.Orthographic(central_longitude=i, central_latitude=j)
     # Specify orthographic projection centered at lon/lat i, j
@@ -274,13 +280,13 @@ def chem_sphere(plobject, key, lev, time_slice,
     ax.set_global()
     # Create the figure
     levels=np.linspace(cube.min(), cube.max(), 30)
-    plimg = ax.contourf(plobject.lons, plobject.lats, cube, transform=ccrs.PlateCarree(), 
+    plimg = ax.contourf(new_lon, plobject.lats, cube, transform=ccrs.PlateCarree(), 
                         levels=levels,
                         cmap='plasma')
     ax.set_title(f'{cube_name.upper()}, {level_name} km')
     ax.gridlines(draw_labels=True, linewidth=1.5, color='silver', alpha=0.5)
     cbar = fig.colorbar(plimg, orientation='vertical', extend='max')
-    cbar.set_label('ppm')
+    cbar.set_label('vmr')
     cbar.ax.yaxis.set_tick_params(color='black')
     plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color='black')
     if save==True:
