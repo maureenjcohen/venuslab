@@ -15,7 +15,7 @@ def timeseries_transform(plobject, key='vitw', fsize=14, plot_transform=True,
     """ Perform Fourier transform of a time series 
         Plot power spectral density against frequency
 
-        Input arg frequnit sets the units of the frequency axis (x-ax9s)
+        Input arg frequnit sets the units of the frequency axis (x-axis)
         Default is 1/20 because the aoa_surface dataset has time units of
         20 outputs per Venus day """
 
