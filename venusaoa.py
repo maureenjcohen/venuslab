@@ -72,7 +72,7 @@ def plot_fits(plobject, coords=(-0., -0.), linelev=30,
 
 # %%
 def ageline(plobject, coords=(-0., -0.), sourcelev=22, linelev=30, trange=(4000,4499),
-            convert2yr=False, fractional=False,
+            convert2yr=False, fractional=False, savepath='/exomars/projects/mc5526/VPCM_volcanic_plumes/scratch_plots/',
             save=False, saveformat='png', savename='age_line.png'):
 
     line_lat = np.where(plobject.lats==coords[0])[0][0]
@@ -102,7 +102,7 @@ def ageline(plobject, coords=(-0., -0.), sourcelev=22, linelev=30, trange=(4000,
     plt.ylabel(f'Age [{cunit}]')
     plt.legend(loc='best')
     if save==True:
-        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.savefig(savepath+savename, format=saveformat, bbox_inches='tight')
         plt.close()
     else:
         plt.show()
@@ -136,7 +136,7 @@ def tracerline(plobject, coords=(-0., -0.), sourcelev=22, linelev=30, trange=(40
 
 # %%
 def zmage(plobject, hmin=0, hmax=20, time_slice=-2, convert2yr=True,
-          levels=None,
+          levels=None, savepath='/exomars/projects/mc5526/VPCM_volcanic_plumes/scratch_plots/',
          save=False, saveformat='png', savename='zmage.png'):
 
     """ Input: numpy array for age of air 
@@ -160,14 +160,14 @@ def zmage(plobject, hmin=0, hmax=20, time_slice=-2, convert2yr=True,
     plt.contourf(plobject.lats, plobject.heights[hmin:hmax], 
                  zmslice, 
                  levels=levels,
-                 cmap='cividis')
+                 cmap='jet')
     plt.title('Age of air (zonal mean)')
     plt.xlabel('Latitude / deg')
     plt.ylabel('Height / km')
     cbar = plt.colorbar()
     cbar.set_label(f'{cunit}')
     if save==True:
-        plt.savefig(savename, format=saveformat, bbox_inches='tight')
+        plt.savefig(savepath + savename, format=saveformat, bbox_inches='tight')
         plt.close()
     else:
         plt.show()

@@ -208,7 +208,7 @@ class Planet:
         """ Calculate local time array for each time output
             and add to Planet object"""
         self.local_time = all_times(self)
-        self.time_labels = np.arange(0,24,24/len(self.lons))
+        #self.time_labels = np.arange(0,24,24/len(self.lons))
 
     def total_area(self):
         """ Calculate total surface area in m2"""
@@ -226,7 +226,6 @@ class Planet:
                 self.total_area() # Get total surface area if not done already
             glob_mean = np.sum(self.data['aire'].values*time_mean_geop.values, axis=(1,2))/self.area.values
             self.heights = glob_mean/1000
-
 
     def setup(self):
         self.set_resolution()
@@ -273,7 +272,7 @@ def all_times(plobject):
 
 
 # %%
-def local_mean(plobject, key, lev, trange):
+def local_mean(plobject, key, lev, trange, meaning=True):
 
     """ Calculate the mean of the input field with respect
         to the local time, i.e. mean over longitudes   
@@ -296,8 +295,9 @@ def local_mean(plobject, key, lev, trange):
         data_list.append(shifted_data)
 
     shifted_array = np.array(data_list)
-    meaned_data = np.mean(shifted_array, axis=0)
-    centred_array = np.roll(meaned_data, int(len(plobject.lons)/2), axis=-1)
+    if meaning==True:
+        shifted_array = np.mean(shifted_array, axis=0)
+    centred_array = np.roll(shifted_array, int(len(plobject.lons)/2), axis=-1)
  
     return centred_array
     

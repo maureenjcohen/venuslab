@@ -17,7 +17,7 @@ case_dict = {
 
 test_orbits = ['VI0066','VI0093','VI0105', 'VI0153']
 # VI0901 is a hot orbit
-test_orbs = ['VI0093_05']
+test_obs = ['VI0093_05']
 
 ## Imports
 # %%
