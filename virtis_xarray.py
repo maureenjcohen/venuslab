@@ -15,11 +15,11 @@ import cartopy.crs as ccrs
 
 # %%
 # File paths
-datadir = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/bands_ALL_orbits_LST/'
-band29 = 'Accumulated_Grids_DATA_VI0_CO_band_2.29_interpol1_150-165K_ALLexp_LST'
-band32 = 'Accumulated_Grids_DATA_VI0_CO_band_2.32_interpol1_150-165K_ALLexp_LST'
+datadir = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/bands_ALL_orbits/'
+band29 = 'Accumulated_Grids_DATA_VI0_CO_band_2.29_interpol1_150-165K_ALLexp'
+band32 = 'Accumulated_Grids_DATA_VI0_CO_band_2.32_interpol1_150-165K_ALLexp'
 virtis_log = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/VIRTIS_log_v5.0_20130129.csv'
-which_x = 'lst'
+which_x = 'lon'
 
 # %%
 class Band:

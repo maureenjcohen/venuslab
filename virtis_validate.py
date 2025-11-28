@@ -120,6 +120,20 @@ def orbit(imobject, libobject, orbit,
 
     return orbit_mean
 
+# %%
+def orbit_map(imobject, libobject, orbit):
+    """ Get array of values of one orbit"""
+
+    band_names = [x for x in libobject['band names'] if x.split('_')[0] == orbit]
+    idx = [libobject['band names'].index(x) for x in libobject['band names'] if x in band_names]
+
+    if len(idx) > 5:
+        orbit_arr = convert_rad_to_CO(imobject.read_bands(np.arange(idx[0],idx[-1]+1)))
+        return orbit_arr
+    else:
+        return None  # Not enough data to make an array
+
+    
 
 # %%
 if __name__ == "__main__":
@@ -213,4 +227,51 @@ if __name__ == "__main__":
         plt.show()
         print(f'Orbit {o} - Case 7 std: {std_case1:.2f}, Case 8 std: {std_case2:.2f}')
     print('Test 3 completed: Scatter compared for selected orbits and pixels.')      
+
+    # Test 4: Compare mean scatter of all points and orbits between projections
+    # %%
+    orbs_list_0 = []
+    for orb in projections[0].unique_orbits:
+        orb_arr = orbit_map(imobject=projections[0].img,
+                             libobject=projections[0].lib,
+                             orbit=orb)
+        if orb_arr is not None:
+            orb_std = np.nanstd(orb_arr, axis=-1)
+            orbs_list_0.append(np.nanmean(orb_std))
+    mean_std_0 = np.nanmean(np.array(orbs_list_0))
+
+    orbs_list_1 = []
+    for orb in projections[1].unique_orbits:
+        orb_arr = orbit_map(imobject=projections[1].img,
+                             libobject=projections[1].lib,
+                             orbit=orb)
+        if orb_arr is not None:
+            orb_std = np.nanstd(orb_arr, axis=-1)
+            orbs_list_1.append(np.nanmean(orb_std))
+    mean_std_1 = np.nanmean(np.array(orbs_list_1))  
+
+    orbs_list_2 = []
+    for orb in projections[2].unique_orbits:
+        orb_arr = orbit_map(imobject=projections[2].img,
+                             libobject=projections[2].lib,
+                             orbit=orb)
+        if orb_arr is not None:
+            orb_std = np.nanstd(orb_arr, axis=-1)
+            orbs_list_2.append(np.nanmean(orb_std))
+    mean_std_2 = np.nanmean(np.array(orbs_list_2))
+
+    orbs_list_3 = []
+    for orb in projections[3].unique_orbits:
+        orb_arr = orbit_map(imobject=projections[3].img,
+                             libobject=projections[3].lib,
+                             orbit=orb)
+        if orb_arr is not None:
+            orb_std = np.nanstd(orb_arr, axis=-1)
+            orbs_list_3.append(np.nanmean(orb_std))
+    mean_std_3 = np.nanmean(np.array(orbs_list_3))
+    print(f'Mean orbit std for case 1 (2.29 152-158K): {mean_std_0:.3f}')
+    print(f'Mean orbit std for case 2 (2.29 152-158K + interpol): {mean_std_1:.3f}')
+    print(f'Mean orbit std for case 3 (2.30 152-158K): {mean_std_2:.3f}')
+    print(f'Mean orbit std for case 4 (2.30 152-158K + interpol): {mean_std_3:.3f}')
+
 # %%
