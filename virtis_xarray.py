@@ -15,11 +15,11 @@ import cartopy.crs as ccrs
 
 # %%
 # File paths
-datadir = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/bands_ALL_orbits/'
-band29 = 'Accumulated_Grids_DATA_VI0_CO_band_2.29_interpol1_150-165K_ALLexp'
-band32 = 'Accumulated_Grids_DATA_VI0_CO_band_2.32_interpol1_150-165K_ALLexp'
+datadir = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/bands_ALL_orbits_LST/'
+band29 = 'Accumulated_Grids_DATA_VI0_CO_band_2.29_interpol1_150-165K_ALLexp_LST'
+band32 = 'Accumulated_Grids_DATA_VI0_CO_band_2.32_interpol1_150-165K_ALLexp_LST'
 virtis_log = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/VIRTIS_log_v5.0_20130129.csv'
-which_x = 'lon'
+which_x = 'lst'
 
 # %%
 class Band:
@@ -71,6 +71,42 @@ class Band:
         for item in self.log.columns.values:
             ds[item] = (('time'), self.log[item].values)
         self.ds = ds
+
+    def count(self):
+        """ Count number of observations per pixel (i.e., non-nan values) 
+            Return indices of pixels with max counts            """
+        counts = np.count_nonzero(~np.isnan(self.da), axis=-1)
+        y_max = np.where(counts==np.max(counts))[0]
+        x_max = np.where(counts==np.max(counts))[1]
+        self.y_max = y_max
+        self.x_max = x_max
+        self.counts = counts
+        ix, jx = np.unravel_index(self.counts.argsort(axis=None), self.counts.shape)
+        self.most_counts = list(zip(ix,jx))[::-1]
+  
+    def orbit_means(self,trange=(0,None)):
+        """ Time series of orbit means for all """
+
+        vals_list = []
+        tvals_list = []
+        for orbit in self.unique_orbits[trange[0]:trange[1]]:
+            print('Processing ' + str(orbit))
+            subset = self.ds.where(self.ds['ORBIT'] == orbit)
+            val = np.nanmean(subset[self.name].values, axis=-1)
+            tval = pd.to_datetime(subset['START_TIME']).mean()
+            vals_list.append(val)
+            tvals_list.append(tval)
+            del subset
+
+        vals_arr = np.array(vals_list)
+        print(vals_arr.shape)
+        vals_arr = np.transpose(vals_arr, (1,2,0))
+        print(vals_arr.shape)
+        time_values = pd.to_datetime(np.array(tvals_list))
+        omeans = xr.DataArray(vals_arr, name='Orbit means', dims=('lat', self.x_coord, 'time'), coords={'lat': self.ds.coords['lat'].values, self.x_coord: self.ds.coords[self.x_coord].values, 'time': time_values})
+        omeans.attrs['description'] = 'Band radiance meaned per orbit'
+        omeans.attrs['unit'] = 'W m-2 str-1 s-1'
+        self.omeans = omeans
 
 # %%
 class BandRatio:
@@ -209,7 +245,7 @@ def hovmoeller(inputda, lat=30, trange=(10,80), xrange=(60,180), levels=np.arang
     da = inputda[lat,xrange[0]:xrange[1],trange[0]:trange[1]]
     print(da.shape)
     fig, ax = plt.subplots(figsize=(8,6))
-    im = ax.contourf(da, cmap='plasma', levels=levels, origin='lower')
+    im = ax.contourf(da.transpose(), cmap='plasma', levels=levels, origin='lower')
     ax.set_title(f'Band ratio (CO proxy) at {np.round(da.coords['lat'].values,0)} lat')
     ax.set_ylabel('Orbits (approx. Earth days)')
     ax.set_xlabel('Local solar time / hours')
