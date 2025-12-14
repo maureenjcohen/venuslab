@@ -256,7 +256,7 @@ def zmage(plobject, hmin=0, hmax=None, time_slice=-1, convert2yr=True,
 
 # %%
 def dispersal_time(plobject, lev, keys, lats, lons,
-                   axis_len=400, save=False,
+                   axis_len=500, save=False,
                    savename='plume_dispersal.png',
                    savepath=None,
                    sformat='png'):
@@ -349,38 +349,171 @@ def dispersal_time(plobject, lev, keys, lats, lons,
     plt.show()
 
 # %%
-def animate_chem_plume(plobject, lev, t0, tf, n=4, qscale=1,
-                  savepath=None):
+def dispersal_map(plobject, lev, keys,
+                   save=False,
+                   savename='dispersal_map.png',
+                   savepath=None,
+                   sformat='png'):
+    if isinstance(keys, str):
+        keys = [keys]
+
+    # Define styles
+    styles = {
+        'h2o': {'cmap': 'Blues', 'vmax': 45.0},
+        'co':  {'cmap': 'Purples', 'vmax': 12.0},
+        'ocs': {'cmap': 'YlOrBr', 'vmax': 4.5},
+        'hcl': {'cmap': 'Reds', 'vmax': 0.6},
+        'so2': {'cmap': 'Greens', 'vmax': 1.3}
+    }
+
+    # Calculate layout
+    num_subplots = len(keys)
+    if num_subplots == 1:
+        num_cols, num_rows = 1, 1
+        figsize = (8, 6)
+    elif num_subplots == 2:
+        num_cols, num_rows = 2, 1
+        figsize = (16, 6)
+    elif num_subplots == 4:
+        num_cols, num_rows = 2, 2
+        figsize = (16, 10)
+    else:
+        num_cols = int(np.ceil(np.sqrt(num_subplots)))
+        num_rows = int(np.ceil(num_subplots / num_cols))
+        figsize = (num_cols*8, num_rows*5)
+
+    fig, axes = plt.subplots(num_rows, num_cols, figsize=figsize, sharex=True, sharey=True, tight_layout=True)
+    if num_subplots == 1:
+        axes = np.array([axes])
+    axes = axes.flatten()
+    
+    # Get eruption coords
+    lat_eq = plobject.plumes['plume_1']['lat_idx']
+    lon_eq = plobject.plumes['plume_1']['lon_idx']
+    lat_hl = plobject.plumes['plume_2']['lat_idx']
+    lon_hl = plobject.plumes['plume_2']['lon_idx']
+
+    for i, key in enumerate(keys):
+        ax = axes[i]
+        
+        cube = plobject.data[key][:,lev,:,:]
+        interval = np.diff(cube.time_counter.values)[0]
+        if key=='co':
+            background = 8.0e-06
+        else:
+            background = cube[plobject.plumes['plume_1']['start_time']-1, lon_eq, lat_eq].values*1.1
+        # Extract age of air tracer data at desired model level
+        # Get time and space indices of plume
+        post_eruption = cube[plobject.plumes['plume_1']['end_time']:,:,:]
+        # Only consider data after plume forcing has finished
+        mask = post_eruption.values > background
+        # Boolean array with same dimension as cube, True is where values are above threshold
+        flattened = np.count_nonzero(mask, axis=0)
+        # Count how many time outputs are True for each lon x lat point
+        map_hours = flattened * interval / (60*60)
+        # Convert time outputs to hours
+
+        # Determine style
+        if key in styles:
+            cmap = styles[key]['cmap']
+        else:
+            cmap = 'viridis'
+
+        cf = ax.contourf(plobject.lons, plobject.lats, map_hours, cmap=cmap)
+        ax.plot(plobject.lons[lon_eq], plobject.lats[lat_eq], 'ro', label='Equatorial eruption')
+        ax.plot(plobject.lons[lon_hl], plobject.lats[lat_hl], 'ko', label='High-latitude eruption')
+        ax.set_title(f'{key.upper()} vmr above {np.round(background*1e6,2)} ppm')
+        ax.grid()
+        
+        # Labels
+        if i % num_cols == 0:
+            ax.set_ylabel('Latitude / deg')
+        if i >= num_subplots - num_cols:
+            ax.set_xlabel('Longitude / deg')
+
+        cbar = plt.colorbar(cf, ax=ax)
+        cbar.set_label('Hours')
+        ax.legend()
+    fig.suptitle(f'Plume dispersal maps, h = {np.round(plobject.heights[lev], 2)} km', y=0.97, fontsize=14)
+    plt.subplots_adjust(wspace=0.3, hspace=0.3)
+    # Remove unused axes
+    for i in range(num_subplots, len(axes)):
+        fig.delaxes(axes[i])
+
+    if save==True:
+        plt.savefig(savepath + savename, format=sformat, bbox_inches='tight')
+
+    plt.show()
+
+# %%
+def animate_chem_plume(plobject, lev, keys, t0, tf, n=4, qscale=1,
+                  savename='test.png', savepath=None, snapshot=None):
     """
     Create an animation of a chemical plume.
 
     Args:
         plobject (PlumeSim): PlumeSim class object containing the data.
         lev (int): Vertical level index to be visualised.
+        keys (str or list): Dictionary key(s) of the data variable(s).
         t0 (int): First frame (time index).
         tf (int): Final frame (time index).
         n (int): Quiver plot sampling interval. Defaults to 4.
         qscale (float): Scale for quiver plot. Defaults to 1.
         savepath (str): Directory path to save the output. Defaults to None.
+        snapshot (int): Frame to save as a still image. Defaults to None.
     """
     # Get height in km rounded to 2 decimal points (for title)
     height = np.round(plobject.heights[lev],2)
     
-    # Extract data for desired altitude
-    h2o_cube = plobject.data['h2o'][t0:tf,lev,:,:]*1e6
-    co_cube = plobject.data['co'][t0:tf,lev,:,:]*1e6
-    ocs_cube = plobject.data['ocs'][t0:tf,lev,:,:]*1e6
-    hcl_cube = plobject.data['hcl'][t0:tf,lev,:,:]*1e6
+    if isinstance(keys, str):
+        keys = [keys]
+
+    # Define styles
+    styles = {
+        'h2o': {'cmap': 'Blues', 'vmax': 45.0},
+        'co':  {'cmap': 'Purples', 'vmax': 12.0},
+        'ocs': {'cmap': 'YlOrBr', 'vmax': 4.5},
+        'hcl': {'cmap': 'Reds', 'vmax': 0.6},
+        'so2': {'cmap': 'Greens', 'vmax': 1.3}
+    }
+
+    # Extract data
+    cubes = {}
+    for key in keys:
+        if key == 'n2':
+             cubes[key] = plobject.data[key][t0:tf,lev,:,:]*100
+        else:
+             cubes[key] = plobject.data[key][t0:tf,lev,:,:]*1e6
 
     # Extract zonal and meridional wind for desired altitude
     u = plobject.data['vitu'][t0:tf,lev,:,:]
     v = plobject.data['vitv'][t0:tf,lev,:,:]
 
+    # Calculate layout
+    num_subplots = len(keys)
+    if num_subplots == 1:
+        num_cols, num_rows = 1, 1
+        figsize = (8, 6)
+    elif num_subplots == 2:
+        num_cols, num_rows = 2, 1
+        figsize = (16, 6)
+    elif num_subplots == 4:
+        num_cols, num_rows = 2, 2
+        figsize = (16, 10)
+    else:
+        num_cols = int(np.ceil(np.sqrt(num_subplots)))
+        num_rows = int(np.ceil(num_subplots / num_cols))
+        figsize = (num_cols*8, num_rows*5)
+
     # Create figure
-    fig, ax = plt.subplots(2,2,figsize=(16, 10), sharex=True, sharey=True)
+    fig, axes = plt.subplots(num_rows, num_cols, figsize=figsize, sharex=True, sharey=True, tight_layout=True)
+    if num_subplots == 1:
+        axes = np.array([axes])
+    axes = axes.flatten()
+    
     X, Y = np.meshgrid(plobject.lons, plobject.lats)
 
-    interval = np.diff(h2o_cube.time_counter.values)[0]/(60*60)
+    interval = np.diff(cubes[keys[0]].time_counter.values)[0]/(60*60)
     time_axis = np.round(np.arange(0,tf-t0)*interval,0)
  
     quiv_args = {
@@ -392,76 +525,81 @@ def animate_chem_plume(plobject, lev, t0, tf, n=4, qscale=1,
     
     # Define an update function that will be called for each frame
     def animate(frame):
-        # H2O plot
-        cf_h2o = ax[0,0].contourf(plobject.lons, plobject.lats, h2o_cube[frame,:,:],
-                                  cmap='Blues',
-                                  vmin=np.min(h2o_cube), vmax=45.0)
-        q1 = ax[0,0].quiver(X[::n, ::n], Y[::n, ::n], -u[frame,::n,::n],
-                   v[frame,::n,::n], **quiv_args)
-        ax[0,0].quiverkey(ax[0,0].quiver(X[::n, ::n], Y[::n, ::n], -u[0,::n,::n],
-                   v[0,::n,::n], **quiv_args), X=0.9, Y=1.05, U=qscale*10, label=f'{qscale*10} m/s',
-                 labelpos='E', coordinates='axes', color='black')
-        ax[0,0].set_title('H2O', color='black', y=1.05, fontsize=14)
-        ax[0,0].set_ylabel('Latitude / deg')
+        for i, key in enumerate(keys):
+            ax = axes[i]
+            ax.clear()
+            
+            cube = cubes[key]
+            
+            # Determine style
+            if key in styles:
+                cmap = styles[key]['cmap']
+                vmax = styles[key]['vmax']
+                if vmax is None: vmax = cube.max()
+                vmin = cube.min()
+            else:
+                cmap = 'viridis'
+                vmax = cube.max()
+                vmin = cube.min()
 
-        # CO plot
-        cf_co = ax[0,1].contourf(plobject.lons, plobject.lats, co_cube[frame,:,:],
-                                  cmap='Purples', vmin=np.min(co_cube), vmax=37.5)
-        q2 = ax[0,1].quiver(X[::n, ::n], Y[::n, ::n], -u[frame,::n,::n],
-                   v[frame,::n,::n], **quiv_args)
-        ax[0,1].quiverkey(ax[0,1].quiver(X[::n, ::n], Y[::n, ::n], -u[0,::n,::n],
-                   v[0,::n,::n], **quiv_args), X=0.9, Y=1.05, U=qscale*10, label=f'{qscale*10} m/s',
-                 labelpos='E', coordinates='axes', color='black')
-        ax[0,1].set_title('CO', color='black', y=1.05, fontsize=14)
+            cf = ax.contourf(plobject.lons, plobject.lats, cube[frame,:,:],
+                                  cmap=cmap,
+                                  vmin=vmin, vmax=vmax)
+            
+            q = ax.quiver(X[::n, ::n], Y[::n, ::n], -u[frame,::n,::n],
+                       v[frame,::n,::n], **quiv_args)
+            
+            ax.quiverkey(ax.quiver(X[::n, ::n], Y[::n, ::n], -u[0,::n,::n],
+                       v[0,::n,::n], **quiv_args), X=0.9, Y=1.05, U=qscale*10, label=f'{qscale*10} m/s',
+                     labelpos='E', coordinates='axes', color='black')
+            
+            ax.set_title(key.upper(), color='black', y=1.05, fontsize=14)
+            
+            # Labels
+            if i % num_cols == 0:
+                ax.set_ylabel('Latitude / deg')
+            if i >= num_subplots - num_cols:
+                 ax.set_xlabel('Longitude / deg')
 
-        # OCS plot
-        cf_ocs = ax[1,0].contourf(plobject.lons, plobject.lats, ocs_cube[frame,:,:],
-                                  cmap='YlOrBr', vmin=np.min(ocs_cube), vmax=4.5)
-        q3 = ax[1,0].quiver(X[::n, ::n], Y[::n, ::n], -u[frame,::n,::n],
-                   v[frame,::n,::n], **quiv_args)
-        ax[1,0].quiverkey(ax[1,0].quiver(X[::n, ::n], Y[::n, ::n], -u[0,::n,::n],
-                   v[0,::n,::n], **quiv_args), X=0.9, Y=1.05, U=qscale*10, label=f'{qscale*10} m/s',
-                 labelpos='E', coordinates='axes', color='black')
-        ax[1,0].set_title('OCS', color='black', y=1.05, fontsize=14)
-        ax[1,0].set_ylabel('Latitude / deg')
-        ax[1,0].set_xlabel('Longitude / deg')
+        plt.subplots_adjust(wspace=0.2, hspace=0.2)
+        fig.suptitle(f'Volcanic plume at {height} km, {time_axis[frame]} hrs', y=0.97, fontsize=16)
 
-        # HCl plot
-        cf_hcl = ax[1,1].contourf(plobject.lons, plobject.lats, hcl_cube[frame,:,:],
-                                  cmap='Reds', vmin=np.min(hcl_cube), vmax=0.6)
-        q4 = ax[1,1].quiver(X[::n, ::n], Y[::n, ::n], -u[frame,::n,::n],
-                   v[frame,::n,::n], **quiv_args)
-        ax[1,1].quiverkey(ax[1,1].quiver(X[::n, ::n], Y[::n, ::n], -u[0,::n,::n],
-                   v[0,::n,::n], **quiv_args), X=0.9, Y=1.05, U=qscale*10, label=f'{qscale*10} m/s',
-                 labelpos='E', coordinates='axes', color='black')
-        ax[1,1].set_title('HCl', color='black', y=1.05, fontsize=14)
-        ax[1,1].set_xlabel('Longitude / deg')
-        plt.subplots_adjust(wspace=0.1)
-        fig.suptitle(f'Volcanic plume at {height} km, {time_axis[frame]} hrs', y=0.97, fontsize=24)
+        if snapshot is not None and frame == snapshot:
+            if savepath:
+                fig.savefig(savepath + f'{savename}_snapshot_{frame}.png', bbox_inches='tight')
+            else:
+                fig.savefig(f'{savename}_snapshot_{frame}.png', bbox_inches='tight')
 
     # Create the animation
     ani = animation.FuncAnimation(fig, animate, frames=range(0,tf-t0), interval=200, repeat=False)
     
-    # Add colorbars
-    cbar_h2o = plt.colorbar(ax[0,0].contourf(plobject.lons, plobject.lats, h2o_cube[0,:,:],
-                                             cmap='Blues', vmin=np.min(h2o_cube), vmax=45.0),
-                                             ax=ax[0,0])
-    cbar_h2o.set_label('ppm', color='black')
-    
-    cbar_co = plt.colorbar(ax[0,1].contourf(plobject.lons, plobject.lats, co_cube[0,:,:],
-                                             cmap='Purples', vmin=np.min(co_cube), vmax=37.5), ax=ax[0,1])
-    cbar_co.set_label('ppm', color='black')
-    
-    cbar_ocs = plt.colorbar(ax[1,0].contourf(plobject.lons, plobject.lats, ocs_cube[0,:,:],
-                                             cmap='YlOrBr', vmin=np.min(ocs_cube), vmax=4.5), ax=ax[1,0])
-    cbar_ocs.set_label('ppm', color='black')
-    
-    cbar_hcl = plt.colorbar(ax[1,1].contourf(plobject.lons, plobject.lats, hcl_cube[0,:,:],
-                                             cmap='Reds', vmin=np.min(hcl_cube), vmax=0.6), ax=ax[1,1])
-    cbar_hcl.set_label('ppm', color='black')
+    # Add colorbars (based on first frame of plume)
+    for i, key in enumerate(keys):
+        ax = axes[i]
+        cube = cubes[key]
+        if key in styles:
+             cmap = styles[key]['cmap']
+             vmax = styles[key]['vmax']
+             if vmax is None: vmax = cube.max()
+             vmin = cube.min()
+        else:
+             cmap = 'viridis'
+             vmax = cube.max()
+             vmin = cube.min()
+             
+        cf = ax.contourf(plobject.lons, plobject.lats, cube[4,:,:], cmap=cmap, vmin=vmin, vmax=vmax)
+        cbar = plt.colorbar(cf, ax=ax)
+        if key == 'n2':
+             cbar.set_label('%', color='black')
+        else:
+             cbar.set_label('ppm', color='black')
+
+    # Remove unused axes
+    for i in range(num_subplots, len(axes)):
+        fig.delaxes(axes[i])
 
     # Save the animation as an mp4 file
-    ani.save(savepath + f'deep_plume_{height}km.mp4', writer='ffmpeg')
+    ani.save(savepath + f'{savename}.mp4', writer='ffmpeg')
     # ani.save('myanimation.gif', writer='pillow') #alternative
 
 # %%
@@ -554,7 +692,7 @@ if __name__ == "__main__":
     zmage(surf_sim, hmin=0, hmax=None, time_slice=-1,
           convert2yr=True, plume_markers=plume_dict, 
           levels=np.arange(0,50,1), savepath=savedir,
-          save=False, sformat=filetype, savename='fig1' + '.' + filetype)
+          save=True, sformat=filetype, savename='fig1' + '.' + filetype)
     surf_sim.close()
     del surf_sim
 
@@ -573,14 +711,14 @@ if __name__ == "__main__":
                savename='fig7' + '.' + filetype,
                savepath=savedir,
                save=True, sformat=filetype)
-    # Figure 10: Background variability of four gases at 35 km
+    # Figure 11: Background variability of four gases at 35 km
     summ_stats(chem_sim, keys=['h2o', 'hcl', 'co', 'ocs'], lev=18, t0=0, tf=None,
-               savename='fig10' + '.' + filetype,
+               savename='fig11' + '.' + filetype,
                savepath=savedir,
                save=True, sformat=filetype)
-    # Figure 13: Background variability of SO2 at 70 km
+    # Figure 14: Background variability of SO2 at 70 km
     summ_stats(chem_sim, keys='so2', lev=35, t0=0, tf=None,
-               savename='fig13' + '.' + filetype,
+               savename='fig14' + '.' + filetype,
                savepath=savedir,
                save=True, sformat=filetype)
     chem_sim.close()
@@ -591,23 +729,28 @@ if __name__ == "__main__":
     plume_sim.load_file(plumes)
     plume_sim.set_resolution()
 
-    # Figure 2: Animation + cover image of H2O plume at 8 km
-    # Figure 5: Animation + cover image of H2O and HCl plumes at 20 km
-    # Figure 8: Animation + cover image of four gas plumes at 35 km
-    # Figure 11: Animation + cover image of SO2 plume at 70 km
+    # Figure 3: Dispersal map of H2O plume at 8 km
+    dispersal_map(plume_sim, lev=10, keys=['h2o'], save=True, savename='fig3' + '.' + filetype, sformat=filetype, savepath=savedir)
+    # Figure 6: Dispersal map H2O and HCl plumes at 20 km
+    dispersal_map(plume_sim, lev=14, keys=['h2o', 'hcl'], save=True, savename='fig6' + '.' + filetype, sformat=filetype, savepath=savedir)
+    # Figure 9: Dispersal map of four gas plumes at 35 km
+    dispersal_map(plume_sim, lev=18, keys=['h2o', 'hcl', 'co', 'ocs'], save=True, savename='fig9' + '.' + filetype, sformat=filetype, savepath=savedir)
+    # Figure 10: Animation + cover image of H2O, HCl, CO, OCS plumes at 35 km
+    animate_chem_plume(plume_sim, lev=18, keys=['h2o', 'hcl', 'co', 'ocs'], t0=0, tf=500, savepath=savedir, savename='fig10', snapshot=100)
+    # Figure 13: Animation + cover image of SO2 plume at 70 km
+    animate_chem_plume(plume_sim, lev=35, keys=['so2'], t0=0, tf=250, qscale=5, savepath=savedir, savename='fig13', snapshot=100)
     
-    # Figure 3: Dispersal time of H2O plumes at 8 km
+    # Figure 2: Dispersal time of H2O plumes at 8 km
     dispersal_time(plume_sim, lev=10, keys=['h2o'], lats=[49,82], lons=[92,47], axis_len=500,
-                   save=True, savename='fig3' + '.' + filetype, sformat=filetype,
+                   save=True, savename='fig2' + '.' + filetype, sformat=filetype,
                    savepath=savedir)
-
-    # Figure 6: Dispersal time of H2O and HCl plumes at 20 km
+    # Figure 5: Dispersal time of H2O and HCl plumes at 20 km
     dispersal_time(plume_sim, lev=14, keys=['h2o', 'hcl'], lats=[49,82], lons=[92,47], axis_len=500,
-                   save=True, savename='fig6' + '.' + filetype, sformat=filetype,
+                   save=True, savename='fig5' + '.' + filetype, sformat=filetype,
                    savepath=savedir)
-    # Figure 9: Dispersal time of four gas plumes at 35 km
+    # Figure 8: Dispersal time of four gas plumes at 35 km
     dispersal_time(plume_sim, lev=18, keys=['h2o', 'hcl', 'co', 'ocs'], lats=[49,82], lons=[92,47], axis_len=500,
-                   save=True, savename='fig9' + '.' + filetype, sformat=filetype,
+                   save=True, savename='fig8' + '.' + filetype, sformat=filetype,
                    savepath=savedir)
     # Figure 12: Dispersal time of SO2 plumes at 70 km
     dispersal_time(plume_sim, lev=35, keys=['so2'], lats=[49,82], lons=[92,47], axis_len=500,
@@ -616,3 +759,5 @@ if __name__ == "__main__":
 
     plume_sim.close()
     del plume_sim
+
+# %%
