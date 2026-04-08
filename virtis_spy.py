@@ -1,14 +1,13 @@
 # Filepaths and such
 # %%
-datadir = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/200_orbits/200_orbits/'
-fn29 = 'Accumulated_Grids_DATA_VI01-2_CO_band_2.29_152-158K_ExpGT0.1_maxEM85_minINC100_1x1_radGT0.02.DAT'
-hdr29 = 'Accumulated_Grids_DATA_VI01-2_CO_band_2.29_152-158K_ExpGT0.1_maxEM85_minINC100_1x1_radGT0.02.HDR'
-fn30 = 'Accumulated_Grids_DATA_VI01-2_CO_band_2.30_152-158K_ExpGT0.1_maxEM85_minINC100_1x1_radGT0.02.DAT'
-hdr30 = 'Accumulated_Grids_DATA_VI01-2_CO_band_2.30_152-158K_ExpGT0.1_maxEM85_minINC100_1x1_radGT0.02.HDR'
-fn32 = 'Accumulated_Grids_DATA_VI01-2_CO_band_2.32_152-158K_ExpGT0.1_maxEM85_minINC100_1x1.DAT'
-hdr32 = 'Accumulated_Grids_DATA_VI01-2_CO_band_2.32_152-158K_ExpGT0.1_maxEM85_minINC100_1x1.HDR'
-fnrat = 'Accumulated_Grids_DATA_VI01-2_CO_bandratio_2.30_2.32_152-158K_ExpGT0.1_maxEM85_minINC100_1x1_radGT0.02.DAT'
-hdrrat = 'Accumulated_Grids_DATA_VI01-2_CO_bandratio_2.30_2.32_152-158K_ExpGT0.1_maxEM85_minINC100_1x1_radGT0.02.HDR'
+datadir = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/extracted_bands/'
+fn29 = 'Accumulated_Grids_VEX-V-VIRTIS-2-3-EXT1-V2.0_VI0_CO_band_2.29_all_LST_interp1.DAT'
+hdr29 = 'Accumulated_Grids_VEX-V-VIRTIS-2-3-EXT1-V2.0_VI0_CO_band_2.29_all_LST_interp1.HDR'
+
+fn32 = 'Accumulated_Grids_VEX-V-VIRTIS-2-3-EXT1-V2.0_VI0_CO_band_2.32_all_LST_interp1.DAT'
+hdr32 = 'Accumulated_Grids_VEX-V-VIRTIS-2-3-EXT1-V2.0_VI0_CO_band_2.32_all_LST_interp1.HDR'
+#fnrat = 'Accumulated_Grids_VEX-V-VIRTIS-2-3-EXT1-V2.0_VI0_CO_bandratio_2.30_2.32_152-158K_ExpGT0.1_maxEM85_minINC100_1x1_radGT0.02.DAT'
+#hdrrat = 'Accumulated_Grids_DATA_VI01-2_CO_bandratio_2.30_2.32_152-158K_ExpGT0.1_maxEM85_minINC100_1x1_radGT0.02.HDR'
 # %%
 # Import SpectralPython and other stuff
 import spectral.io.envi as envi
@@ -18,8 +17,8 @@ import numpy as np
 import matplotlib.animation as animation
 
 # %%
-img = envi.open(datadir+hdrrat,datadir+fnrat)
-lib = envi.read_envi_header(datadir+hdrrat)
+img = envi.open(datadir+hdr29,datadir+fn29)
+lib = envi.read_envi_header(datadir+hdr29)
 
 # %%
 # Get list of orbits, no duplicates
@@ -86,7 +85,9 @@ def orbit(data, libobject, orbit,
         lon_pix = np.arange(0, orbit_mean.shape[1])
 
         fig, ax = plt.subplots(figsize=(8, 6))
-        cf = ax.contourf(lon_pix, lat_pix, orbit_mean, levels=levels, cmap='jet')
+        cf = ax.contourf(lon_pix, lat_pix, orbit_mean, 
+        #                 levels=levels, 
+                         cmap='jet')
         ax.set_title(f'VIRTIS CO map ~35 km for orbit {str(orbit)}')
         ax.set_xlabel('Longitude / pixels')
         ax.set_ylabel('Latitude / pixels')
@@ -189,6 +190,17 @@ def moving_average(a, n=5):
 
     return ret
 
+# %%
+def band_ratio(b29, l29, b32, l32, t0, tf):
+
+    common_elements, indices_29, indices_32 = np.intersect1d(l29['wavelength'], l32['wavelength'], return_indices=True)
+
+    band29 = b29.read_bands(indices_29[t0:tf])
+    band32 = b32.read_bands(indices_32[t0:tf])
+
+    ratio = band29 / band32
+
+    return ratio
 # %%
 def barstow_co(band29, lib29, band32, lib32, t0, tf):
 

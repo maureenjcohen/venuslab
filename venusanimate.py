@@ -98,7 +98,7 @@ def time_sphere(inputarray, lons, lats, i, j, trange=(500, 600, 5), inputcols='p
 
 # %%
 def lonlat_frame(inputarray, lons, lats, heights, lev, time_slice, 
-                 inputcols, ptitle, cunit, clevs, tday,
+                 inputcols, ptitle, cunit, clevs,
                  animation=False):
 
     if clevs is None:
@@ -109,7 +109,7 @@ def lonlat_frame(inputarray, lons, lats, heights, lev, time_slice,
     plt.contourf(lons, lats, inputarray[time_slice,lev,:,:], 
                  levels=clevs,
                  cmap=inputcols, extend='max')
-    plt.title(f'{ptitle}, h={np.round(heights[lev],0)} km, day {tday}')
+    plt.title(f'{ptitle}, h={np.round(heights[lev],0)} km')
     plt.xlabel('Longitude / deg')
     plt.ylabel('Latitude / deg')
     cbar = plt.colorbar()
@@ -134,13 +134,13 @@ def lonlat_frame(inputarray, lons, lats, heights, lev, time_slice,
 def animate_lonlat(inputarray, lons, lats, heights, lev, 
                    inputcols,
                    ptitle, cunit,
-                   clevs, tdays,
+                   clevs,
                    savename='lonlat.gif'):
 
     im = []
     for t in range(0,inputarray.shape[0],1):
         frame_shot = lonlat_frame(inputarray, lons, lats, heights, lev, 
-                                  t, inputcols, ptitle, cunit, clevs, tdays[t], 
+                                  t, inputcols, ptitle, cunit, clevs, 
                                   animation=True)
         im.append(frame_shot)
 
