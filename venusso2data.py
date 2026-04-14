@@ -1,19 +1,26 @@
 # %%
+from logging import log
+
+from asyncio import log
+
 import pandas as pd
+from virtis_validate import orbit
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
 
 # %%
 fpath = '/exomars/projects/mc5526/VPCM_decadal_so2/MC_SO2_SPICAV.txt'
+virtis_log = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/VIRTIS_log_v5.0_20130129.csv'
 
 # %%
 class SPICAV:
-    def __init__(self, filepath):
+    def __init__(self, filepath, logpath):
         """
         Initializes the SPICAV object by loading data from a text file.
         """
         self.filepath = filepath
+        self.logpath = logpath
         self.raw_df = self._load_data()
         self.ds = None
 
@@ -23,7 +30,7 @@ class SPICAV:
             'so2_ppbv', 'rel_error_pct', 'latitude', 
             'longitude', 'local_solar_time', 'vex_orbit'
         ]
-        
+
         # Using engine='python' to handle the whitespace-heavy formatting
         df = pd.read_csv(
             self.filepath, 
@@ -34,6 +41,14 @@ class SPICAV:
         )
         # Ensure orbit is integer for clean indexing
         df['vex_orbit'] = df['vex_orbit'].astype(int)
+
+        log = pd.read_csv(self.logpath, skiprows=1)
+        orbit = [x.split('_')[0][2:] for x in log['PRODUCT_ID']]
+        log['VEX_ORBIT'] = [pd.to_numeric(x).astype(int) for x in orbit]
+        log = log.drop_duplicates(subset=['VEX_ORBIT'], keep='first')
+        log['START_DATE'] = pd.to_datetime(log['START_TIME'], utc=True).dt.normalize()
+        mapping_dict = dict(zip(log['VEX_ORBIT'], log['START_DATE']))
+        df['start_date'] = df['vex_orbit'].map(mapping_dict)
         return df
 
     def create_dataset(self, grid_type='latlon', lat_res=1.0, lon_res=1.0, lst_res=0.5):
