@@ -258,6 +258,34 @@ def marcq_fig1(ds, weighted=False, save=False,
     plt.show()
 
 # %%
+def marcq_fig3(ds, save=False, window=240, min_valid_days=60,
+               savepath='/exomars/projects/mc5526/VPCM_decadal_so2/scratch_plots/'):
+    """
+    Reproduces Fig. 3 from Marcq. 2013 
+    """
+    weights = np.cos(np.deg2rad(ds.latitude))
+    so2_weighted = ds.so2_ppbv.weighted(weights).mean(dim=['latitude', 'longitude'])
+    smoothed = so2_weighted.rolling(start_date=window, center=True, min_periods=min_valid_days).mean()
+
+    error_mean = ds.rel_error_pct.mean(dim=['latitude', 'longitude'])
+    error_absolute = error_mean * so2_weighted / 100.0
+    roll = so2_weighted.rolling(start_date=window, center=True, min_periods=min_valid_days)
+    smoothed_error = roll.std() / np.sqrt(roll.count())
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.errorbar(ds.start_date.values, smoothed, yerr=smoothed_error, linestyle='-', c='r',
+                fmt='o', markerfacecolor='r', markeredgecolor='k', markersize=4, markeredgewidth=0.5, 
+                ecolor='k',linewidth=1, capsize=3, capthick=1)
+    ax.set_title(f'{window}-day rolling mean of SO2 at 70 km')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('SO2 / ppbv')
+ 
+    if save:
+        fig.savefig(savepath+f'marcq_fig3_{window}d.png', bbox_inches='tight')
+
+    plt.show()
+
+# %%
 data_processor = SPICAV(fpath, lpath)
 
 # %%
