@@ -1,17 +1,14 @@
 # %%
-from logging import log
-
-from asyncio import log
-
 import pandas as pd
 from virtis_validate import orbit
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 # %%
 fpath = '/exomars/projects/mc5526/VPCM_decadal_so2/MC_SO2_SPICAV.txt'
-virtis_log = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/VIRTIS_log_v5.0_20130129.csv'
+lpath = '/exomars/projects/mc5526/VPCM_decadal_so2/SPICAV_dates.txt'
 
 # %%
 class SPICAV:
@@ -42,13 +39,27 @@ class SPICAV:
         # Ensure orbit is integer for clean indexing
         df['vex_orbit'] = df['vex_orbit'].astype(int)
 
-        log = pd.read_csv(self.logpath, skiprows=1)
-        orbit = [x.split('_')[0][2:] for x in log['PRODUCT_ID']]
-        log['VEX_ORBIT'] = [pd.to_numeric(x).astype(int) for x in orbit]
-        log = log.drop_duplicates(subset=['VEX_ORBIT'], keep='first')
-        log['START_DATE'] = pd.to_datetime(log['START_TIME'], utc=True).dt.normalize()
-        mapping_dict = dict(zip(log['VEX_ORBIT'], log['START_DATE']))
+        log_cols = ['filename','product_id','product_creation_time',
+                    'data_set_id','release_id','revision_id',
+                    'start_time','stop_time','nb_records']
+
+        log = pd.read_csv(self.logpath, header=None, names=log_cols, skiprows=22)
+        orbit = [x.split('/')[3][5:] for x in log['filename']]
+        log['vex_orbit'] = [pd.to_numeric(x).astype(int) for x in orbit]
+        log = log.drop_duplicates(subset=['vex_orbit'], keep='first')
+        log['start_date'] = pd.to_datetime(log['start_time'], utc=True).dt.normalize()
+
+        last_orbit = log['vex_orbit'].max()
+        last_date = log['start_date'].max()
+        target_orbit = 3146
+        new_orbits = range(last_orbit + 1, target_orbit + 1)
+        new_dates = pd.date_range(start = last_date + pd.Timedelta(days=1), periods=len(new_orbits), freq='D')
+        df_extrapolated = pd.DataFrame({'vex_orbit': new_orbits, 'start_date': new_dates})
+        log = pd.concat([log, df_extrapolated], ignore_index=True)
+
+        mapping_dict = dict(zip(log['vex_orbit'], log['start_date']))
         df['start_date'] = df['vex_orbit'].map(mapping_dict)
+        df['start_date'] = df['start_date'].dt.tz_localize(None)
         return df
 
     def create_dataset(self, grid_type='latlon', lat_res=1.0, lon_res=1.0, lst_res=0.5):
@@ -70,19 +81,29 @@ class SPICAV:
         
         if grid_type == 'latlon':
             df['longitude'] = (df['longitude'] / lon_res).round() * lon_res
-            dims = ['vex_orbit', 'latitude', 'longitude']
+            dims = ['start_date', 'latitude', 'longitude']
         elif grid_type == 'latlst':
             df['local_solar_time'] = (df['local_solar_time'] / lst_res).round() * lst_res
-            dims = ['vex_orbit', 'latitude', 'local_solar_time']
+            dims = ['start_date', 'latitude', 'local_solar_time']
         else:
             raise ValueError("grid_type must be 'latlon' or 'latlst'")
 
         # 2. Handling overlapping points within the same bin
         # We take the mean of SO2 and error if multiple shots fall in one grid cell
-        df_grouped = df.groupby(dims).mean()
+        df_for_grid = df.drop(columns=['vex_orbit'])
+        df_grouped = df_for_grid.groupby(dims).mean()
 
         # 3. Convert to Xarray
         self.ds = df_grouped.to_xarray()
+        orbit_mapping = self.raw_df.drop_duplicates('start_date').set_index('start_date')['vex_orbit']
+        orbits = orbit_mapping.reindex(self.ds.start_date.values).values
+        self.ds.coords['vex_orbit'] = ('start_date', orbits)
+
+        # Promote the non-dimension variable to a multidimensional coordinate
+        if grid_type == 'latlon':
+            self.ds = self.ds.set_coords('local_solar_time')
+        elif grid_type == 'latlst':
+            self.ds = self.ds.set_coords('longitude')
 
         # 4. Add Metadata
         self._set_metadata()
@@ -111,6 +132,10 @@ class SPICAV:
             self.ds.longitude.attrs = {'units': 'degrees_east', 'standard_name': 'longitude'}
         if 'local_solar_time' in self.ds.coords:
             self.ds.local_solar_time.attrs = {'units': 'hours', 'long_name': 'Local Solar Time'}
+        if 'start_date' in self.ds.coords:
+            self.ds.start_date.attrs = {'long_name': 'Start Date of Orbit'} 
+        if 'vex_orbit' in self.ds.coords:
+            self.ds.vex_orbit.attrs = {'units': '1', 'long_name': 'VEX Orbit Number'}  
 
 
 ## Functions
@@ -121,10 +146,11 @@ def plot_orbit_summary(ds, orbit_idx):
     Colors the points by the secondary dimension (Longitude or LST).
     """
     # 1. Select the orbit by positional index
-    orbit_ds = ds.isel(vex_orbit=orbit_idx)
+    orbit_ds = ds.isel(start_date=orbit_idx)
     
     # 2. Extract the actual Orbit Number for the title
     orb_num = int(orbit_ds.vex_orbit.values)
+    day = pd.to_datetime(orbit_ds.start_date.values).strftime('%Y-%m-%d')
 
     # 4. Clean the data (Squeeze out NaNs to get the track points)
     # This converts the sparse 2D slice into a dense 1D set of points
@@ -156,7 +182,7 @@ def plot_orbit_summary(ds, orbit_idx):
                     c='r', edgecolor='k', alpha=0.7)
     #plt.colorbar(sc, label=f'{x_label} / {"hr" if x_coord == "local_solar_time" else "deg"}')
     
-    ax.set_title(f"SPICAV SO2 Profile | Orbit: {orb_num} | {x_label}: {x_num[0]:.2f}")
+    ax.set_title(f"SPICAV SO2 Profile | Orbit: {orb_num} | {x_label}: {x_num[0]:.2f} | Date: {day}")
     ax.set_xlabel("SO2 / ppbv")
     ax.set_ylabel("Latitude / deg")
     ax.grid(True, linestyle=':', alpha=0.7)
@@ -168,7 +194,7 @@ def plot_orbit_path(ds, orbit_idx):
     """
     Plots the spatial path of the orbit (Latitude vs Lon/LST).
     """
-    orbit_ds = ds.isel(vex_orbit=orbit_idx)
+    orbit_ds = ds.isel(start_date=orbit_idx)
     orb_num = int(orbit_ds.vex_orbit.values)
     
     # Determine coordinate type
@@ -191,7 +217,48 @@ def plot_orbit_path(ds, orbit_idx):
     plt.show()
 
 # %%
-data_processor = SPICAV(fpath)
+def marcq_fig1(ds, weighted=False, save=False,
+               savepath='/exomars/projects/mc5526/VPCM_decadal_so2/scratch_plots/'):
+    """
+    Reproduces Fig. 1 from Marcq. 2013 
+    """
+    if weighted==True:
+        # Get latitude-weighted so2 values
+        weights = np.cos(np.deg2rad(ds.latitude))
+        so2_weighted = ds.so2_ppbv.weighted(weights).mean(dim=['latitude', 'longitude'])
+        error_mean = ds.rel_error_pct.mean(dim=['latitude', 'longitude'])
+        error_absolute = error_mean * so2_weighted / 100.0
+
+    else:
+        df_valid = ds['so2_ppbv'].to_dataframe().dropna().reset_index()
+        df_error = ds['rel_error_pct'].to_dataframe().dropna().reset_index()
+        error_absolute = df_error['rel_error_pct'] * df_valid['so2_ppbv'] / 100.0
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    if weighted==True:
+        ax.errorbar(ds.start_date.values, so2_weighted, yerr=error_absolute, 
+                     fmt='o', markerfacecolor='r', markeredgecolor='k', markersize=3, markeredgewidth=0.5, 
+                     ecolor='k',linewidth=1, capsize=5, capthick=2)
+        ax.set_title('Latitude-weighted SO2 at 70km')
+    else:
+        ax.errorbar(df_valid['start_date'], df_valid['so2_ppbv'], yerr=error_absolute, 
+                    fmt='o', markerfacecolor='r', markeredgecolor='k', markersize=3, markeredgewidth=0.5, 
+                     ecolor='k',linewidth=1, capsize=5, capthick=2)
+        ax.set_title('All SO2 observations at 70km')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('SO2 / ppbv')
+    ax.set_yscale('log')
+    ax.set_xlim(pd.to_datetime('2006-01-01'), pd.to_datetime('2015-01-01'))
+    ax.xaxis.set_major_locator(mdates.YearLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+    ax.xaxis.set_minor_locator(mdates.MonthLocator())
+    if save:
+        fig.savefig(savepath+'marcq_fig1_weighted.png', bbox_inches='tight') if weighted else fig.savefig(savepath+'marcq_fig1_all.png', bbox_inches='tight')
+
+    plt.show()
+
+# %%
+data_processor = SPICAV(fpath, lpath)
 
 # %%
 dsgeo = data_processor.create_dataset(grid_type='latlon', lat_res=1.0, lon_res=1.0)
