@@ -15,11 +15,11 @@ import cartopy.crs as ccrs
 
 # %%
 # File paths
-datadir = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/bands_ALL_orbits_LST/'
-band29 = 'Accumulated_Grids_DATA_VI0_CO_band_2.29_interpol1_150-165K_ALLexp_LST'
-band32 = 'Accumulated_Grids_DATA_VI0_CO_band_2.32_interpol1_150-165K_ALLexp_LST'
+datadir = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/bands_ALL_orbits/'
+band29 = 'Accumulated_Grids_DATA_VI0_CO_band_2.29_interpol1_150-165K_ALLexp'
+band32 = 'Accumulated_Grids_DATA_VI0_CO_band_2.32_interpol1_150-165K_ALLexp'
 virtis_log = '/exomars/projects/mc5526/VPCM_deep_atmos_CO/VIRTIS_log_v5.0_20130129.csv'
-which_x = 'lst'
+which_x = 'lon'
 
 # %%
 class Band:
@@ -281,7 +281,7 @@ def sphere(inputda, levels, i=0, j=-90,
     plimg = ax.contourf(x_axis, inputda.coords['lat'], inputda, transform=ccrs.PlateCarree(), 
                         levels=levels,
                         cmap='jet')
-    ax.set_title(f'{inputda.coords['time'].values}')
+    #ax.set_title(f'{inputda.coords['time'].values}')
     gl = ax.gridlines(draw_labels=True, linewidth=1.5, color='silver', alpha=0.5, y_inline=True, x_inline=False)
     gl.xlocator = mticker.FixedLocator([0, 180])
     if inputda.coords[which_x].name == 'lst':

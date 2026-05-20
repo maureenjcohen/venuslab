@@ -286,6 +286,54 @@ def marcq_fig3(ds, save=False, window=240, min_valid_days=60,
     plt.show()
 
 # %%
+def marcq_reproduce(ds, save=False, window=240, min_valid_days=60,
+               savepath='/exomars/projects/mc5526/VPCM_decadal_so2/scratch_plots/'):
+    """
+    Combined plot: top - latitude-weighted SO2 at 70km (from marcq_fig1), 
+    bottom - 240-day rolling mean of SO2 at 70km (from marcq_fig3)
+    """
+    # Compute latitude-weighted SO2
+    weights = np.cos(np.deg2rad(ds.latitude))
+    so2_weighted = ds.so2_ppbv.weighted(weights).mean(dim=['latitude', 'longitude'])
+    error_mean = ds.rel_error_pct.mean(dim=['latitude', 'longitude'])
+    error_absolute = error_mean * so2_weighted / 100.0
+
+    # Compute smoothed rolling mean
+    smoothed = so2_weighted.rolling(start_date=window, center=True, min_periods=min_valid_days).mean()
+    roll = so2_weighted.rolling(start_date=window, center=True, min_periods=min_valid_days)
+    smoothed_error = roll.std() / np.sqrt(roll.count())
+
+    # Create subplots
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
+
+    # Top subplot: latitude-weighted SO2
+    ax1.errorbar(ds.start_date.values, so2_weighted, yerr=error_absolute, 
+                 fmt='o', markerfacecolor='r', markeredgecolor='k', markersize=3, markeredgewidth=0.5, 
+                 ecolor='k', linewidth=1, capsize=5, capthick=2)
+    ax1.set_title('Latitude-weighted SO2 at 70km')
+    ax1.set_ylabel('SO2 / ppbv')
+    ax1.set_yscale('log')
+
+    # Bottom subplot: rolling mean
+    ax2.errorbar(ds.start_date.values, smoothed, yerr=smoothed_error, linestyle='-', c='r',
+                 fmt='o', markerfacecolor='r', markeredgecolor='k', markersize=4, markeredgewidth=0.5, 
+                 ecolor='k', linewidth=1, capsize=3, capthick=1)
+    ax2.set_title(f'{window}-day rolling mean of SO2 at 70 km')
+    ax2.set_xlabel('Date')
+    ax2.set_ylabel('SO2 / ppbv')
+
+    # Format x-axis like marcq_fig1
+    ax2.set_xlim(pd.to_datetime('2006-01-01'), pd.to_datetime('2015-01-01'))
+    ax2.xaxis.set_major_locator(mdates.YearLocator())
+    ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+    ax2.xaxis.set_minor_locator(mdates.MonthLocator())
+
+    if save:
+        fig.savefig(savepath+'marcq_combined.png', bbox_inches='tight')
+
+    plt.show()
+
+# %%
 data_processor = SPICAV(fpath, lpath)
 
 # %%
