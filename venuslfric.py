@@ -30,8 +30,8 @@ meshdict = {'face_x': 'Mesh2d_face_x', 'face_y': 'Mesh2d_face_y',
 ## Candidate names for each physical field. LFRic names diagnostics after
 ## the XIOS file definition, so a time-meaned run and an instantaneous run
 ## carry different names for the same quantity.
-fielddict = {'u': ['u_mean', 'u_in_w2h', 'u_inst'],
-             'v': ['v_mean', 'v_in_w2h', 'v_inst'],
+fielddict = {'u': ['u_mean', 'u_in_w2h', 'u_inst','u'],
+             'v': ['v_mean', 'v_in_w2h', 'v_inst', 'v'],
              'theta': ['theta_mean', 'theta', 'theta_inst'],
              'exner': ['exner_mean', 'exner', 'exner_inst'],
              'rho': ['rho_mean', 'rho', 'rho_inst'],
@@ -238,7 +238,10 @@ class LFRicPlanet:
         exner. """
         exner = self.data[self.key('exner')][time_slice].values
         theta = self.data[self.key('theta')][time_slice].values
-        theta_half = 0.5 * (theta[:-1, :] + theta[1:, :])
+        if theta.shape[0] == exner.shape[0] + 1:
+            theta_half = 0.5 * (theta[:-1, :] + theta[1:, :])
+        else:
+            theta_half = theta
         temperature = theta_half * exner
         pressure = self.p_zero * exner**(1.0 / self.kappa)
         return pressure / (self.rd * temperature)
@@ -268,8 +271,9 @@ class LFRicPlanet:
 
         am = np.zeros(indices.size)
         for n, i in enumerate(indices):
-            u_edge = self.data[ukey][i].values
-            u_face = self.edges_to_faces(u_edge)
+            u_field = self.data[ukey][i]
+            u_face = (u_field.values if 'nMesh2d_face' in u_field.dims
+                      else self.edges_to_faces(u_field.values))
             rho = self.calc_density(int(i))
             am[n] = np.nansum(u_face * arm * rho * volume)
 
@@ -304,7 +308,8 @@ def zmzw_and_am(plobject, meaning=True, trange=(0, None), time_slice=-1,
     else:
         wind = zonal[time_slice, :, :].values
 
-    lats, zmean = plobject.zonal_mean(wind, plobject.edge_lats, nbins=nbins)
+    lats = plobject.face_lats if 'nMesh2d_face' in zonal.dims else plobject.edge_lats
+    lats, zmean = plobject.zonal_mean(wind, lats, nbins=nbins)
     times, am = plobject.calc_relative_am(trange=trange)
     days = times / 86400.0
 
@@ -335,3 +340,5 @@ def zmzw_and_am(plobject, meaning=True, trange=(0, None), time_slice=-1,
         plt.close()
     else:
         plt.show()
+
+# %%
